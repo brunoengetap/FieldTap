@@ -358,6 +358,27 @@
         <div class="field-label">Kit de instalação <span class="muted">(opcional)</span></div>
         <div id="kit-list"></div>
       </div>
+      <div class="field" id="ajuste-kit-field" style="display:none">
+        <div class="field-label">Ajuste do kit / observação de instalação <span class="muted">(opcional)</span></div>
+        <input type="text" id="item-ajuste-kit" class="field-input" placeholder="Ex: adaptar rosca BSP para NPT">
+      </div>
+
+      <div class="field" id="escala-field" style="display:none">
+        <div class="field-label">Escala do instrumento</div>
+        <label style="display:block;margin-bottom:6px"><input type="radio" name="escala-modo" value="padrao" checked onchange="alternarModoEscala()"> Usar escala padrão do catálogo</label>
+        <label style="display:block;margin-bottom:10px"><input type="radio" name="escala-modo" value="personalizada" onchange="alternarModoEscala()"> Informar escala personalizada</label>
+        <div id="escala-custom-wrap" style="display:none">
+          <div class="qty-row" style="gap:8px">
+            <input type="number" id="escala-inicio" class="field-input" placeholder="Início" step="any">
+            <input type="number" id="escala-fim" class="field-input" placeholder="Fim" step="any">
+          </div>
+          <select id="escala-unidade" class="field-input" style="margin-top:8px" onchange="atualizarPreviewEscala()">
+            <option value="">Selecione a unidade</option><option>kgf/cm²</option><option>bar</option><option>psi</option><option>kPa</option><option>MPa</option><option>°C</option><option value="outro">outro</option>
+          </select>
+          <input type="text" id="escala-unidade-outra" class="field-input" placeholder="Informe a unidade" style="margin-top:8px;display:none" oninput="atualizarPreviewEscala()">
+        </div>
+        <div class="muted" id="escala-preview" style="margin-top:8px;font-size:12px">Escala final: —</div>
+      </div>
 
       <!-- Quantidade -->
       <div class="field">
@@ -474,6 +495,7 @@ var estado = {
   vaso_selecionado: null,   // objeto vaso
   mano_selecionado: null,   // objeto manômetro
   kit_selecionado:  null,   // objeto kit ou null
+  catalogos_erro:   '',     // erro no carregamento de catálogos
   itens:            []      // itens acumulados para o levantamento
 };
 
@@ -565,6 +587,10 @@ window.addEventListener('load', function() {
   if (GAS_URL === 'COLE_AQUI_A_URL_DO_GAS') {
     document.getElementById('url-warning').style.display = 'block';
   }
+  ['escala-inicio','escala-fim','escala-unidade-outra'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input', atualizarPreviewEscala);
+  });
 });
 
 function pinDigit(d) {
@@ -620,7 +646,7 @@ async function autenticar() {
 function logout() {
   estado = { inspetor:null, catalogos:null, os_selecionada:null,
              vaso_selecionado:null, mano_selecionado:null,
-             kit_selecionado:null, itens:[] };
+             kit_selecionado:null, catalogos_erro:'', itens:[] };
   _pin = ''; _atualizarDots();
   document.getElementById('pin-error').textContent = '';
   mostrarView('view-pin');
@@ -733,11 +759,13 @@ async function _carregarCatalogosBackground() {
   if (estado.catalogos) return;
   try {
     var res = await gasGet('getCatalogos');
+    estado.catalogos_erro = '';
     estado.catalogos = {
       manometros: res.manometros || [],
       kits:       res.kits       || []
     };
   } catch (err) {
+    estado.catalogos_erro = err.message || 'Falha ao carregar catálogos';
     console.warn('Catálogos não carregados em background:', err.message);
   }
 }
@@ -756,6 +784,17 @@ function irItem(vaso) {
   document.getElementById('item-qtd').value = 1;
   document.getElementById('item-obs').value = '';
   document.getElementById('kit-field').style.display = 'none';
+  document.getElementById('ajuste-kit-field').style.display = 'none';
+  document.getElementById('item-ajuste-kit').value = '';
+  document.getElementById('escala-field').style.display = 'none';
+  document.querySelector('input[name="escala-modo"][value="padrao"]').checked = true;
+  document.getElementById('escala-inicio').value = '';
+  document.getElementById('escala-fim').value = '';
+  document.getElementById('escala-unidade').value = '';
+  document.getElementById('escala-unidade-outra').value = '';
+  document.getElementById('escala-unidade-outra').style.display = 'none';
+  document.getElementById('escala-custom-wrap').style.display = 'none';
+  document.getElementById('escala-preview').textContent = 'Escala final: —';
 
   renderManometros();
   mostrarView('view-item');
@@ -765,6 +804,10 @@ function renderManometros() {
   var container = document.getElementById('mano-list');
 
   if (!estado.catalogos || !estado.catalogos.manometros.length) {
+    if (estado.catalogos_erro) {
+      container.innerHTML = '<div class="empty" style="padding:20px"><div class="empty-icon">&#9888;</div>Erro ao carregar catálogos:<br><small>' + esc(estado.catalogos_erro) + '</small><br><button class="btn btn-ghost btn-sm mt16" onclick="recarregarCatalogos()">Tentar novamente</button></div>';
+      return;
+    }
     container.innerHTML =
       '<div class="empty" style="padding:20px">' +
       '<div class="spinner" style="margin:0 auto"></div>' +
@@ -802,6 +845,13 @@ function renderManometros() {
     container.appendChild(c);
   });
 }
+async function recarregarCatalogos() {
+  estado.catalogos = null;
+  estado.catalogos_erro = '';
+  renderManometros();
+  await _carregarCatalogosBackground();
+  renderManometros();
+}
 
 function selecionarManometro(m) {
   estado.mano_selecionado = m;
@@ -814,26 +864,30 @@ function selecionarManometro(m) {
   });
 
   // Filtra kits pela bitola (campo rosca do manômetro)
-  var kitsDisp = (estado.catalogos.kits || []).filter(function(k) { return k.bitola === m.rosca; });
+  var kitsDisp = (estado.catalogos.kits || []).filter(function(k) {
+    return String(k.bitola || '').trim() === String(m.rosca || '').trim();
+  });
   var kitField = document.getElementById('kit-field');
   var kitList  = document.getElementById('kit-list');
 
+  kitField.style.display = 'block';
+  kitList.innerHTML = '';
+  document.getElementById('ajuste-kit-field').style.display = 'block';
+  document.getElementById('escala-field').style.display = 'block';
+
+  // Opção "sem kit" — selecionada por padrão
+  var semKit = document.createElement('div');
+  semKit.className = 'card selected';
+  semKit.style.padding = '10px 14px';
+  semKit.innerHTML = '<div class="card-title" style="font-size:13px;color:#718096">Sem kit de instalação</div>';
+  semKit.addEventListener('click', function() {
+    estado.kit_selecionado = null;
+    document.querySelectorAll('#kit-list .card').forEach(function(x) { x.classList.remove('selected'); });
+    semKit.classList.add('selected');
+  });
+  kitList.appendChild(semKit);
+
   if (kitsDisp.length) {
-    kitField.style.display = 'block';
-    kitList.innerHTML = '';
-
-    // Opção "sem kit" — selecionada por padrão
-    var semKit = document.createElement('div');
-    semKit.className = 'card selected';
-    semKit.style.padding = '10px 14px';
-    semKit.innerHTML = '<div class="card-title" style="font-size:13px;color:#718096">Sem kit de instalação</div>';
-    semKit.addEventListener('click', function() {
-      estado.kit_selecionado = null;
-      document.querySelectorAll('#kit-list .card').forEach(function(x) { x.classList.remove('selected'); });
-      semKit.classList.add('selected');
-    });
-    kitList.appendChild(semKit);
-
     kitsDisp.forEach(function(kit) {
       var c = document.createElement('div');
       c.className = 'card';
@@ -847,6 +901,7 @@ function selecionarManometro(m) {
 
       c.innerHTML =
         '<div class="card-title" style="font-size:13px">' + esc(kit.nome) + '</div>' +
+        '<div class="card-sub" style="font-size:11px;margin-top:3px">Bitola: ' + esc(kit.bitola || '—') + ' · Tipo: ' + esc(kit.tipo_kit || '—') + '</div>' +
         (comps ? '<div class="card-sub" style="font-size:11px;margin-top:3px">' + comps + '</div>' : '') +
         inclRS;
 
@@ -860,9 +915,35 @@ function selecionarManometro(m) {
 
       kitList.appendChild(c);
     });
-  } else {
-    kitField.style.display = 'none';
   }
+  atualizarPreviewEscala();
+}
+function alternarModoEscala() {
+  var modo = document.querySelector('input[name="escala-modo"]:checked').value;
+  document.getElementById('escala-custom-wrap').style.display = (modo === 'personalizada') ? 'block' : 'none';
+  atualizarPreviewEscala();
+}
+function atualizarPreviewEscala() {
+  var m = estado.mano_selecionado;
+  if (!m) return;
+  var modo = document.querySelector('input[name="escala-modo"]:checked').value;
+  var preview = '';
+  if (modo === 'padrao') preview = String(m.escala_padrao || '—');
+  else {
+    var inicio = document.getElementById('escala-inicio').value.trim();
+    var fim = document.getElementById('escala-fim').value.trim();
+    var unSel = document.getElementById('escala-unidade').value;
+    document.getElementById('escala-unidade-outra').style.display = (unSel === 'outro') ? 'block' : 'none';
+    var unidade = unSel === 'outro' ? document.getElementById('escala-unidade-outra').value.trim() : unSel;
+    preview = (inicio && fim && unidade) ? (inicio + '-' + fim + ' ' + unidade) : '—';
+  }
+  document.getElementById('escala-preview').textContent = 'Escala final: ' + preview;
+}
+function _montarDescricaoCurta(m, escalaTxt) {
+  if (!escalaTxt) return m.desc_curta || m.tipo;
+  return [m.tipo || 'Manômetro', (m.fluido || '').trim(), (m.caixa_mm ? m.caixa_mm + 'mm' : ''), '·',
+    (m.rosca || ''), (m.tipo_rosca || ''), '·', (m.tipo_entrada || m.entrada || ''), '·', escalaTxt, '·', (m.marca || '')]
+    .join(' ').replace(/\s+/g, ' ').replace(/\s·/g, ' ·').trim();
 }
 
 function ajustarQtd(delta) {
@@ -888,6 +969,20 @@ function adicionarItem() {
   var kit  = estado.kit_selecionado;
   var vaso = estado.vaso_selecionado;
   var esc_ = _parseEscala(m.escala_padrao);
+  var modoEscala = document.querySelector('input[name="escala-modo"]:checked').value;
+  var ajusteKit = document.getElementById('item-ajuste-kit').value.trim();
+  if (modoEscala === 'personalizada') {
+    var inicio = document.getElementById('escala-inicio').value.trim();
+    var fim = document.getElementById('escala-fim').value.trim();
+    var unidadeSel = document.getElementById('escala-unidade').value;
+    var unidadeTxt = unidadeSel === 'outro' ? document.getElementById('escala-unidade-outra').value.trim() : unidadeSel;
+    if (!inicio || !fim || !unidadeTxt) return showToast('Preencha início, fim e unidade da escala personalizada.', 'error');
+    var nIni = Number(inicio), nFim = Number(fim);
+    if (!isNaN(nIni) && !isNaN(nFim) && nFim <= nIni) return showToast('Escala inválida: fim deve ser maior que início.', 'error');
+    esc_ = { inicio: inicio, fim: fim, unidade: unidadeTxt };
+  }
+  var escalaTexto = (esc_.inicio && esc_.fim && esc_.unidade) ? (esc_.inicio + '-' + esc_.fim + ' ' + esc_.unidade) : String(m.escala_padrao || '');
+  var descCurta = (modoEscala === 'personalizada') ? _montarDescricaoCurta(m, escalaTexto) : (m.desc_curta || m.tipo);
 
   var item = {
     id_vaso:           vaso.id_vaso,
@@ -895,14 +990,14 @@ function adicionarItem() {
     nome_vaso:         vaso.nome,
     tipo_acessorio:    'manometro',
     id_item_catalogo:  m.id,
-    descricao_curta:   m.desc_curta || m.tipo,
+    descricao_curta:   descCurta,
     quantidade:        qtd,
     escala_inicio:     esc_.inicio,
     escala_fim:        esc_.fim,
     escala_unidade:    esc_.unidade,
     id_kit:            kit ? kit.id : '',
     componentes_kit:   kit ? (kit.componentes || []) : [],
-    ajuste_kit:        '',
+    ajuste_kit:        ajusteKit,
     requer_calibracao: String(m.requer_calibracao || false),
     requer_lacre:      kit ? String(kit.inclui_formalizacao_rs || false) : 'false',
     observacao:        obs,
@@ -910,8 +1005,10 @@ function adicionarItem() {
     // Metadados locais para exibição na revisão — removidos antes do envio ao GAS
     _display: {
       vaso: vaso.tag + ' — ' + vaso.nome,
-      mano: m.desc_curta || m.tipo,
-      kit:  kit ? kit.nome : null,
+      mano: descCurta,
+      kit:  kit ? kit.nome : 'Sem kit',
+      escala: escalaTexto,
+      ajuste_kit: ajusteKit,
       qtd:  qtd
     }
   };
@@ -949,7 +1046,9 @@ function renderRevisao() {
         '<div class="item-title">' + esc(d.mano || item.descricao_curta) + '</div>' +
         '<div class="item-meta">' +
           esc(d.vaso || item.tag_vaso) + ' &nbsp;|&nbsp; Qtd: ' + item.quantidade +
-          (d.kit ? '<br>Kit: ' + esc(d.kit) : '') +
+          '<br>Kit: ' + esc(d.kit || 'Sem kit') +
+          '<br>Escala: ' + esc(d.escala || ((item.escala_inicio && item.escala_fim && item.escala_unidade) ? (item.escala_inicio + '-' + item.escala_fim + ' ' + item.escala_unidade) : '—')) +
+          (d.ajuste_kit ? '<br>Ajuste do kit: ' + esc(d.ajuste_kit) : '') +
           (item.observacao ? '<br>' + esc(item.observacao) : '') +
         '</div>' +
       '</div>' +
