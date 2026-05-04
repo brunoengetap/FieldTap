@@ -10,7 +10,7 @@ Projeto: FieldTap · TapParts · GAS/Sheets
 
 Empresa: Engetap  
 
-Versão do controle: 1.4  
+Versão do controle: 1.5  
 
 Última atualização: 03/05/2026
 
@@ -56,7 +56,9 @@ O projeto já possui uma base funcional ponta a ponta nos três blocos principai
 
 \- Catálogos e kits já podem ser cadastrados, editados, ativados e inativados pelo TapParts.
 
-\- O próximo passo autorizado é o S4: evoluir o FieldTap para consumir melhor os kits e permitir escala personalizada.
+\- O S4 foi fechado funcionalmente, evoluindo o FieldTap para consumir melhor os kits e permitir escala personalizada.
+
+\- O próximo passo autorizado é o S5, desde que seja feita uma conferência rápida do fluxo FieldTap → Planilha → TapParts.
 
 
 
@@ -92,9 +94,9 @@ Decisão estratégica atual:
 
 | S3 | Catálogos e kits no TapParts | ✅ FECHADO | Claude + testes do usuário | TapParts\_Beta.html / GAS\_Code.js | TapParts passou a gerir manômetros e kits com persistência no GAS |
 
-| S4 | Kit e escala personalizada no FieldTap | ✅ AUTORIZADO / PRÓXIMO | Claude + Codex se necessário | FieldTap\_Beta.html / GAS\_Code.js se necessário | Próximo sprint funcional |
+| S4 | Kit e escala personalizada no FieldTap | ✅ FECHADO FUNCIONALMENTE | Codex | FieldTap\_Beta.html | FieldTap evoluído com kits, opção sem kit, ajuste\_kit e escala personalizada. Fechamento documental ainda pode ser consolidado |
 
-| S5 | Pipeline administrativo e retorno | 🔒 BLOQUEADO por S4 | Claude + Codex | TapParts\_Beta.html / FieldTap\_Beta.html / GAS\_Code.js | Só iniciar após S4 fechado |
+| S5 | Pipeline administrativo e retorno | ✅ AUTORIZADO / PRÓXIMO | Claude + Codex | TapParts\_Beta.html / FieldTap\_Beta.html / GAS\_Code.js | Iniciar após conferência rápida do fluxo FieldTap → Planilha → TapParts |
 
 | R1 | Refinamento visual e unificação de identidade | 🔒 BACKLOG | Claude | FieldTap\_Beta.html / TapParts\_Beta.html | Tratar após sprints funcionais principais, salvo bloqueio de usabilidade |
 
@@ -116,19 +118,21 @@ Decisão estratégica atual:
 
 | GAS\_Code\_S0\_Fechado.js | Backup S0 | 03/05/2026 | S0 | ✅ Backup | Ponto de retorno do backend mínimo |
 
-| GAS\_Code\_S3\_FECHADO.js | Backup S3 | 03/05/2026 | S3 | ✅ Backup recomendado | Criar/manter como ponto de retorno do GAS pós-catálogo |
+| GAS\_Code\_S3\_FECHADO.js | Backup S3 | 03/05/2026 | S3 | ✅ Backup recomendado | Ponto de retorno do GAS pós-catálogo |
 
-| FieldTap\_Beta.html | S1 funcional | 03/05/2026 | S1 | ✅ Atual até S4 | Conectado ao GAS real. Será evoluído no S4 |
+| FieldTap\_Beta.html | S4 funcional | 03/05/2026 | S4 | ✅ Atual | Conectado ao GAS real, com seleção de kits, ajuste\_kit e escala personalizada |
 
 | FieldTap\_Beta\_S1\_Fechado.html | Backup S1 | 03/05/2026 | S1 | ✅ Backup | Ponto de retorno do FieldTap antes do S4 |
+
+| FieldTap\_Beta\_S4\_Fechado.html | Backup S4 | 03/05/2026 | S4 | ✅ Backup recomendado | Ponto de retorno do FieldTap após kit e escala personalizada |
 
 | TapParts\_Beta.html | S3 funcional | 03/05/2026 | S3 | ✅ Atual | Levantamentos, itens, catálogo de manômetros e kits funcionando |
 
 | TapParts\_Beta\_S2\_Fechado.html | Backup S2 | 03/05/2026 | S2 | ✅ Backup | Ponto de retorno antes da gestão de catálogo |
 
-| TapParts\_Beta\_S3\_FECHADO.html | Backup S3 | 03/05/2026 | S3 | ✅ Backup recomendado | Criar/manter como ponto de retorno do TapParts pós-catálogo |
+| TapParts\_Beta\_S3\_FECHADO.html | Backup S3 | 03/05/2026 | S3 | ✅ Backup recomendado | Ponto de retorno do TapParts pós-catálogo |
 
-| 00\_CONTROLE\_GERAL.md | v1.4 | 03/05/2026 | Governança | ✅ Atual | Fonte da verdade do projeto |
+| 00\_CONTROLE\_GERAL.md | v1.5 | 03/05/2026 | Governança | ✅ Atual | Fonte da verdade do projeto |
 
 | 01\_DIVISAO\_DE\_PAPEIS.md | v1.0 | 03/05/2026 | Governança | ✅ Arquivado | Papéis dos agentes |
 
@@ -157,6 +161,12 @@ Decisão estratégica atual:
 | S3\_LOG.md | S3 | 03/05/2026 | S3 | ✅ Arquivado | Log de execução e testes do Sprint 3 |
 
 | S3\_FECHAMENTO.md | S3 | 03/05/2026 | S3 | ✅ Arquivado | Fechamento formal do Sprint 3 |
+
+| S4\_ABERTURA.md | S4 | 03/05/2026 | S4 | ✅ Arquivado | Documento de abertura do Sprint 4 |
+
+| S4\_LOG.md | S4 | 03/05/2026 | S4 | ✅ Arquivado | Log de execução e testes do Sprint 4 |
+
+| S4\_FECHAMENTO.md | S4 | 03/05/2026 | S4 | ⚠️ Consolidar | Fechamento funcional recebido, mas documento ainda pode conter campos em template/não testados |
 
 
 
@@ -192,7 +202,7 @@ Decisão estratégica atual:
 
 \- Kits serão pré-cadastrados no TapParts por bitola e tipo.
 
-\- Escala de manômetro terá lista fixa e, em sprint futuro, personalização de início, fim e unidade.
+\- Escala de manômetro terá lista fixa e personalização de início, fim e unidade a partir do S4.
 
 \- S0 criou apenas o backend mínimo.
 
@@ -202,7 +212,9 @@ Decisão estratégica atual:
 
 \- S3 criou gestão funcional de catálogos de manômetros e kits no TapParts.
 
-\- S4 deve evoluir o FieldTap para usar melhor kits e escala personalizada.
+\- S4 evoluiu o FieldTap para usar melhor kits e escala personalizada.
+
+\- S5 deve iniciar o pipeline administrativo e retorno.
 
 \- Decisão: priorizar conclusão dos sprints funcionais principais antes de refinamento visual amplo.
 
@@ -246,11 +258,15 @@ Decisão estratégica atual:
 
 \- Não alterar arquivos fechados diretamente:
 
+
+
 &#x20; - `GAS\_Code\_S0\_Fechado.js`
 
 &#x20; - `GAS\_Code\_S3\_FECHADO.js`
 
 &#x20; - `FieldTap\_Beta\_S1\_Fechado.html`
+
+&#x20; - `FieldTap\_Beta\_S4\_Fechado.html`
 
 &#x20; - `TapParts\_Beta\_S2\_Fechado.html`
 
@@ -307,6 +323,8 @@ Decisão estratégica atual:
 
 
 Depois do S3, o GAS\_Code.js deixou de ser apenas S0.1.  
+
+
 
 A versão atual do arquivo de trabalho é S3 funcional.
 
@@ -368,6 +386,8 @@ Criar a estrutura mínima de backend com Google Sheets + Google Apps Script para
 
 \- Criação das abas:
 
+
+
 &#x20; - LEVANTAMENTOS
 
 &#x20; - ITENS
@@ -384,7 +404,11 @@ Criar a estrutura mínima de backend com Google Sheets + Google Apps Script para
 
 &#x20; - CAT\_KITS
 
+
+
 \- Dados de teste:
+
+
 
 &#x20; - 2 inspetores
 
@@ -396,11 +420,15 @@ Criar a estrutura mínima de backend com Google Sheets + Google Apps Script para
 
 &#x20; - 2 kits
 
+
+
 \- Roteador GET via `doGet()`.
 
 \- Roteador POST via `doPost()`.
 
 \- Endpoints GET:
+
+
 
 &#x20; - `validarPIN`
 
@@ -416,19 +444,29 @@ Criar a estrutura mínima de backend com Google Sheets + Google Apps Script para
 
 &#x20; - `getItensByLevantamento`
 
+
+
 \- Endpoints POST:
+
+
 
 &#x20; - `enviarLevantamento`
 
 &#x20; - `atualizarStatusItem`
 
+
+
 \- Geração de IDs:
+
+
 
 &#x20; - `LEV-YYYY-NNN`
 
 &#x20; - `ACE-YYYY-NNN`
 
 &#x20; - `HST-NNNNN`
+
+
 
 \- Uso de `LockService` nas operações de escrita.
 
@@ -578,6 +616,8 @@ Conectar o FieldTap\_Beta.html ao backend real GAS/Sheets criado no Sprint 0, su
 
 \- Seleção de:
 
+
+
 &#x20; - OS
 
 &#x20; - vaso/equipamento
@@ -590,13 +630,19 @@ Conectar o FieldTap\_Beta.html ao backend real GAS/Sheets criado no Sprint 0, su
 
 &#x20; - observação
 
+
+
 \- Envio de levantamento real via endpoint `enviarLevantamento`.
 
 \- Exibição de confirmação com:
 
+
+
 &#x20; - ID do levantamento
 
 &#x20; - IDs dos itens criados
+
+
 
 \- Tratamento básico de erro de conexão.
 
@@ -768,15 +814,21 @@ Conectar o TapParts\_Beta.html ao GAS real e transformar a tela principal em uma
 
 \- Funções de comunicação:
 
+
+
 &#x20; - `gasGet()`
 
 &#x20; - `gasPost()`
+
+
 
 \- Tela principal de levantamentos via `getLevantamentosByCliente`.
 
 \- Exibição de cards por levantamento.
 
 \- Exibição de:
+
+
 
 &#x20; - cliente
 
@@ -789,6 +841,8 @@ Conectar o TapParts\_Beta.html ao GAS real e transformar a tela principal em uma
 &#x20; - total de itens
 
 &#x20; - resumo de status
+
+
 
 \- Botão “Ver levantamento”.
 
@@ -978,13 +1032,19 @@ Implementar no TapParts\_Beta.html a gestão administrativa de catálogos técni
 
 \- Geração de ID para novos itens de catálogo:
 
+
+
 &#x20; - MAN-006, MAN-007, etc.
 
 &#x20; - KIT-003, KIT-004, etc.
 
+
+
 \- Geração de `desc\_curta` para manômetros a partir dos valores atuais enviados pelo formulário.
 
 \- Manutenção dos endpoints anteriores:
+
+
 
 &#x20; - `validarPIN`
 
@@ -1012,11 +1072,15 @@ Implementar no TapParts\_Beta.html a gestão administrativa de catálogos técni
 
 \- Navegação superior com:
 
+
+
 &#x20; - Levantamentos FieldTap
 
 &#x20; - Catálogo
 
 &#x20; - Kits de Instalação
+
+
 
 \- Preservação da tela de levantamentos criada no S2.
 
@@ -1130,7 +1194,11 @@ Implementar no TapParts\_Beta.html a gestão administrativa de catálogos técni
 
 \- Os textos de aviso/placeholder foram restaurados para:
 
+
+
 &#x20; - `COLE\_AQUI\_A\_URL\_DO\_GAS`
+
+
 
 \- A URL real ficou concentrada apenas em `const GAS\_URL`.
 
@@ -1190,11 +1258,225 @@ S4 autorizado.
 
 
 
-\## 12. Próximo sprint autorizado
+\## 12. Sprint S4 — Kit e escala personalizada no FieldTap
 
 
 
-\## Sprint S4 — Kit e escala personalizada no FieldTap
+\### Status
+
+
+
+✅ FECHADO FUNCIONALMENTE
+
+
+
+\### Data
+
+
+
+Abertura: 03/05/2026  
+
+Fechamento funcional: 03/05/2026
+
+
+
+\### Objetivo
+
+
+
+Evoluir o FieldTap\_Beta.html para consumir corretamente os catálogos e kits geridos no TapParts, permitir seleção clara de kits de instalação e implementar escala personalizada para manômetros/vacuômetros/manovacuômetros.
+
+
+
+\### Arquivos afetados
+
+
+
+\- FieldTap\_Beta.html
+
+
+
+\### Arquivos que permaneceram intocados
+
+
+
+\- TapParts\_Beta.html
+
+\- TapParts\_Beta\_S3\_FECHADO.html
+
+\- GAS\_Code\_S3\_FECHADO.js
+
+\- Backups fechados em geral
+
+
+
+\### O que foi implementado
+
+
+
+\- Preservado fluxo de PIN.
+
+\- Preservado carregamento de OS.
+
+\- Preservado carregamento de vasos.
+
+\- Preservado carregamento de catálogos.
+
+\- Melhorada a seleção de kits por bitola/rosca.
+
+\- Adicionada opção clara “Sem kit de instalação”.
+
+\- Adicionado campo `ajuste\_kit`.
+
+\- Adicionada opção de escala padrão.
+
+\- Adicionada opção de escala personalizada.
+
+\- Adicionada validação de escala personalizada.
+
+\- Atualizada geração de `descricao\_curta` para refletir escala personalizada.
+
+\- Revisão passou a exibir kit, escala, ajuste do kit e observação.
+
+\- Payload final preserva campos necessários para a aba ITENS.
+
+\- `GAS\_Code.js` não foi alterado nesta execução.
+
+
+
+\### Critérios de aceite — resultado
+
+
+
+Resultado formal pendente de consolidação documental.
+
+
+
+Critérios que devem ser confirmados na conferência rápida:
+
+
+
+\- \[ ] FieldTap abre no celular.
+
+\- \[ ] PIN autentica via GAS.
+
+\- \[ ] OS e vasos carregam.
+
+\- \[ ] Manômetros ativos aparecem no FieldTap.
+
+\- \[ ] Manômetros inativos não aparecem no FieldTap.
+
+\- \[ ] Kits ativos aparecem conforme bitola/rosca.
+
+\- \[ ] Kits inativos não aparecem.
+
+\- \[ ] Opção “Sem kit de instalação” aparece claramente.
+
+\- \[ ] É possível selecionar “Sem kit”.
+
+\- \[ ] É possível selecionar kit simples.
+
+\- \[ ] É possível selecionar kit DCBI.
+
+\- \[ ] Campo `ajuste\_kit` aparece e aceita texto opcional.
+
+\- \[ ] É possível usar escala padrão.
+
+\- \[ ] É possível escolher escala personalizada.
+
+\- \[ ] Validação impede `escala\_fim` menor ou igual à `escala\_inicio`.
+
+\- \[ ] Unidade de escala é obrigatória quando escala personalizada é usada.
+
+\- \[ ] Revisão mostra descrição curta final.
+
+\- \[ ] Revisão mostra kit ou “Sem kit”.
+
+\- \[ ] Revisão mostra escala final.
+
+\- \[ ] Revisão mostra `ajuste\_kit`, se preenchido.
+
+\- \[ ] Envio do levantamento funciona.
+
+\- \[ ] Aba ITENS recebe campos de escala e kit.
+
+\- \[ ] TapParts abre o levantamento enviado pelo FieldTap.
+
+\- \[ ] TapParts mostra item com escala e kit.
+
+\- \[ ] TapParts mostra item sem kit corretamente.
+
+
+
+\### Pendência documental
+
+
+
+O fechamento funcional foi recebido, mas o `S4\_FECHAMENTO.md` ainda pode conter campos em modo template/não testado. Por rastreabilidade, o status fica como FECHADO FUNCIONALMENTE até consolidação final do documento.
+
+
+
+\### O que ficou fora do S4
+
+
+
+\- Redesign visual amplo.
+
+\- Alterações no TapParts.
+
+\- Pipeline administrativo completo.
+
+\- Exportação ERP.
+
+\- Aprovação parcial.
+
+\- Compra.
+
+\- Recebimento.
+
+\- Calibração administrativa.
+
+\- Retorno ao FieldTap.
+
+\- Faturamento.
+
+\- Integração com Omie.
+
+\- Upload real de fotos.
+
+\- Modo offline completo.
+
+\- IndexedDB completo.
+
+\- Tela completa de válvulas, purgadores, placas e DCBI.
+
+\- Nova autenticação.
+
+\- Controle de permissões por perfil.
+
+
+
+\### Decisão de fechamento
+
+
+
+Sprint S4 fechado funcionalmente.  
+
+FieldTap\_Beta.html congelado como versão S4 funcional.  
+
+S5 autorizado após conferência rápida do fluxo FieldTap → Planilha → TapParts.
+
+
+
+\---
+
+
+
+\## 13. Próximo sprint autorizado
+
+
+
+\## Sprint S5 — Pipeline administrativo e retorno
 
 
 
@@ -1210,7 +1492,7 @@ S4 autorizado.
 
 
 
-Evoluir o FieldTap\_Beta.html para consumir corretamente os catálogos e kits geridos no TapParts, permitir melhor seleção de kit de instalação e implementar escala personalizada para manômetros/vacuômetros/manovacuômetros.
+Evoluir o TapParts para iniciar o pipeline administrativo dos itens levantados em campo, permitindo avanço mais estruturado por status, preparação para cotação/orçamento, controle de aprovação, compra, recebimento, calibração/lacre e posterior retorno ao FieldTap.
 
 
 
@@ -1218,7 +1500,7 @@ Evoluir o FieldTap\_Beta.html para consumir corretamente os catálogos e kits ge
 
 
 
-\- FieldTap\_Beta.html
+\- TapParts\_Beta.html
 
 
 
@@ -1228,19 +1510,23 @@ Evoluir o FieldTap\_Beta.html para consumir corretamente os catálogos e kits ge
 
 \- GAS\_Code.js
 
-
-
-\### Arquivos proibidos no S4
+\- FieldTap\_Beta.html
 
 
 
-\- TapParts\_Beta.html, salvo autorização explícita.
+\### Arquivos proibidos no S5
+
+
 
 \- TapParts\_Beta\_S3\_FECHADO.html.
 
 \- FieldTap\_Beta\_S1\_Fechado.html.
 
+\- FieldTap\_Beta\_S4\_Fechado.html.
+
 \- GAS\_Code\_S3\_FECHADO.js.
+
+\- Backups fechados em geral.
 
 \- Arquivos de sprints futuros.
 
@@ -1250,129 +1536,97 @@ Evoluir o FieldTap\_Beta.html para consumir corretamente os catálogos e kits ge
 
 
 
-\- Preservar conexão existente do FieldTap com o GAS.
+\- Preservar conexão existente do TapParts com o GAS.
 
-\- Preservar login por PIN.
+\- Preservar leitura de levantamentos.
 
-\- Preservar seleção de OS e vasos.
+\- Preservar leitura de itens por levantamento.
 
-\- Preservar envio de levantamento.
+\- Preservar gestão de catálogos e kits criada no S3.
 
-\- Atualizar fluxo de seleção de manômetro para refletir catálogo gerido no TapParts.
+\- Melhorar o tratamento administrativo dos itens levantados.
 
-\- Exibir kits disponíveis por bitola de forma mais clara.
+\- Criar visão mais clara por status do item.
 
-\- Permitir seleção explícita de:
+\- Permitir controle individual dos acessórios.
 
-&#x20; - Sem kit
-
-&#x20; - Instalação simples
-
-&#x20; - DCBI, quando houver kit correspondente
-
-\- Implementar escala personalizada para manômetros/vacuômetros/manovacuômetros:
-
-&#x20; - início de escala
-
-&#x20; - fim de escala
-
-&#x20; - unidade
-
-&#x20; - divisão opcional, se for simples
-
-\- Garantir que a descrição enviada ao GAS reflita escala personalizada quando usada.
-
-\- Enviar campos compatíveis com ITENS:
-
-&#x20; - `escala\_inicio`
-
-&#x20; - `escala\_fim`
-
-&#x20; - `escala\_unidade`
-
-&#x20; - `id\_kit`
-
-&#x20; - `componentes\_kit`
-
-&#x20; - `ajuste\_kit`
-
-&#x20; - `requer\_calibracao`
-
-&#x20; - `requer\_lacre`
-
-\- Não implementar upload real de fotos ainda, salvo se explicitamente autorizado.
-
-\- Não implementar modo offline completo ainda.
+\- Preparar fluxo para:
 
 
 
-\### Critérios preliminares de aceite do S4
+&#x20; - cotação
+
+&#x20; - aprovação
+
+&#x20; - compra
+
+&#x20; - recebimento
+
+&#x20; - calibração/lacre
+
+&#x20; - preparação para retorno ao FieldTap
 
 
 
-\- \[ ] FieldTap abre no celular.
+\- Registrar histórico das mudanças de status.
 
-\- \[ ] PIN 1234 continua autenticando via GAS.
-
-\- \[ ] OS e vasos continuam carregando.
-
-\- \[ ] Manômetros criados no TapParts aparecem no FieldTap via `getCatalogos`.
-
-\- \[ ] Manômetros inativos no TapParts não aparecem no FieldTap.
-
-\- \[ ] Kits criados no TapParts aparecem no FieldTap quando a bitola corresponde.
-
-\- \[ ] Kits inativos não aparecem no FieldTap.
-
-\- \[ ] Usuário consegue selecionar “Sem kit”.
-
-\- \[ ] Usuário consegue selecionar kit simples quando disponível.
-
-\- \[ ] Usuário consegue selecionar kit DCBI quando disponível.
-
-\- \[ ] Usuário consegue informar ajuste no kit em campo livre.
-
-\- \[ ] Usuário consegue informar escala personalizada.
-
-\- \[ ] Fim de escala precisa ser maior que início.
-
-\- \[ ] Unidade de escala é obrigatória quando escala personalizada for usada.
-
-\- \[ ] Envio do levantamento grava escala e kit corretamente na aba ITENS.
-
-\- \[ ] TapParts consegue ler o item enviado pelo FieldTap com escala e kit.
-
-\- \[ ] TapParts\_Beta.html não foi alterado.
-
-\- \[ ] GAS\_Code.js só foi alterado se houver necessidade justificada.
+\- Evitar alterar o FieldTap salvo se o retorno ao campo exigir preparação mínima.
 
 
 
-\### Fora do escopo do S4
+\### Critérios preliminares de aceite do S5
+
+
+
+\- \[ ] TapParts abre sem erro.
+
+\- \[ ] Levantamentos existentes continuam carregando.
+
+\- \[ ] Itens existentes continuam abrindo por levantamento.
+
+\- \[ ] Catálogo de manômetros continua funcionando.
+
+\- \[ ] Kits continuam funcionando.
+
+\- \[ ] Status dos itens pode ser atualizado de forma mais organizada.
+
+\- \[ ] Histórico de status continua sendo registrado.
+
+\- \[ ] Campos administrativos relevantes ficam visíveis.
+
+\- \[ ] Fluxo individual por acessório fica mais claro.
+
+\- \[ ] Não há perda de compatibilidade com itens enviados pelo FieldTap S4.
+
+\- \[ ] GAS\_Code.js só é alterado se houver necessidade justificada.
+
+\- \[ ] Backups fechados não são alterados.
+
+
+
+\### Fora do escopo do S5
 
 
 
 \- Redesign visual amplo.
 
-\- Pipeline completo administrativo.
+\- Integração completa com ERP.
 
-\- Exportação ERP.
+\- Integração com Omie.
 
-\- Aprovação parcial.
+\- Faturamento completo.
 
-\- Compras.
+\- Upload real de fotos.
 
-\- Recebimento.
+\- Modo offline completo.
 
-\- Calibração/lacre administrativo.
+\- App nativo.
 
-\- Retorno ao FieldTap.
+\- Reescrita total do TapParts.
 
-\- Faturamento.
+\- Alteração estrutural da planilha sem necessidade técnica real.
 
-\- App offline completo.
-
-\- Upload real de fotos, salvo autorização explícita.
+\- Criação de sprint visual paralelo.
 
 
 
@@ -1380,7 +1634,7 @@ Evoluir o FieldTap\_Beta.html para consumir corretamente os catálogos e kits ge
 
 
 
-\## 13. Backlog atual
+\## 14. Backlog atual
 
 
 
@@ -1420,7 +1674,7 @@ Evoluir o FieldTap\_Beta.html para consumir corretamente os catálogos e kits ge
 
 
 
-\## 14. Regras de operação entre agentes
+\## 15. Regras de operação entre agentes
 
 
 
@@ -1504,7 +1758,7 @@ Evoluir o FieldTap\_Beta.html para consumir corretamente os catálogos e kits ge
 
 
 
-\## 15. Protocolo de congelamento anti-expansão
+\## 16. Protocolo de congelamento anti-expansão
 
 
 
@@ -1520,11 +1774,17 @@ Quando qualquer bug aparecer durante um sprint:
 
 4\. ChatGPT classifica:
 
+
+
 &#x20;  - BLOQUEADOR
 
 &#x20;  - BACKLOG
 
+
+
 5\. Se for BLOQUEADOR:
+
+
 
 &#x20;  - ChatGPT gera prompt cirúrgico.
 
@@ -1534,7 +1794,11 @@ Quando qualquer bug aparecer durante um sprint:
 
 &#x20;  - Se passou, sprint continua.
 
+
+
 6\. Se for BACKLOG:
+
+
 
 &#x20;  - Registrar no `02\_BACKLOG.md`.
 
@@ -1554,7 +1818,7 @@ Nunca permitir que um sprint funcional vire sprint visual sem autorização expl
 
 
 
-\## 16. Histórico resumido
+\## 17. Histórico resumido
 
 
 
@@ -1618,51 +1882,65 @@ S4 liberado.
 
 
 
+\### 03/05/2026 — S4 fechado funcionalmente
+
+
+
+FieldTap evoluído para consumir melhor os kits geridos pelo TapParts.  
+
+Foi adicionada opção clara “Sem kit de instalação”.  
+
+Foi adicionado campo `ajuste\_kit`.  
+
+Foi adicionada escala padrão/personalizada.  
+
+Revisão passou a exibir kit, escala, ajuste do kit e observação.  
+
+GAS\_Code.js não foi alterado.  
+
+S5 liberado após conferência rápida do fluxo FieldTap → Planilha → TapParts.
+
+
+
 \---
 
 
 
-\## 17. Próxima ação
+\## 18. Próxima ação
 
 
 
-Abrir o Sprint S4 com o documento `S4\_ABERTURA.md` e enviar ao Claude.
+Realizar conferência rápida do S4 no fluxo:
 
 
 
-O S4 deve atuar principalmente sobre:
+FieldTap → Planilha → TapParts
 
 
 
-\- `FieldTap\_Beta.html`
+Conferir principalmente:
 
 
 
-Pode atuar sobre:
+\- FieldTap abre no celular.
+
+\- PIN autentica.
+
+\- OS e vasos carregam.
+
+\- Manômetros ativos aparecem.
+
+\- Kits ativos aparecem conforme bitola.
+
+\- Opção “Sem kit” funciona.
+
+\- Escala personalizada é gravada.
+
+\- Aba ITENS recebe os campos de kit e escala.
+
+\- TapParts abre o levantamento enviado pelo FieldTap.
 
 
 
-\- `GAS\_Code.js`, somente se for estritamente necessário e justificado.
-
-
-
-O S4 não deve alterar:
-
-
-
-\- `TapParts\_Beta.html`
-
-\- `TapParts\_Beta\_S3\_FECHADO.html`
-
-\- `FieldTap\_Beta\_S1\_Fechado.html`
-
-\- `GAS\_Code\_S3\_FECHADO.js`
-
-
-
-Objetivo do próximo sprint:
-
-
-
-Implementar kit de instalação e escala personalizada no FieldTap, consumindo os catálogos e kits já administrados pelo TapParts no S3.
+Após essa conferência, abrir o Sprint S5 — Pipeline administrativo e retorno.
 
