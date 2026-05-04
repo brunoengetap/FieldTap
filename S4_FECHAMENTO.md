@@ -34,7 +34,7 @@ Preencher após validação:
 
 Detalhes adicionais:
 
-[preencher]
+- Implementação técnica concluída no `FieldTap_Beta.html`, mantendo este documento em modo template (sem declarar fechamento e sem marcar critérios como aprovados).
 
 ---
 

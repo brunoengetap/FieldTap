@@ -66,7 +66,8 @@ Preencher após entrega do Codex:
 
 Notas:
 
-[preencher]
+- Implementado no `FieldTap_Beta.html`: seleção explícita de kit com opção fixa "Sem kit de instalação", campo opcional `ajuste_kit`, seção de escala padrão/personalizada com validação e prévia, revisão detalhada com kit/escala/ajuste e tratamento de erro de catálogo com botão de retentativa.
+- `GAS_Code.js` não foi alterado nesta execução.
 
 ---
 
