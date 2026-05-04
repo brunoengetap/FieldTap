@@ -1,0 +1,1691 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TapParts</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --pri:      #1F4E79;
+      --pri-dk:   #163d62;
+      --pri-lt:   #EBF2F9;
+      --bg:       #F0F4F8;
+      --card:     #FFFFFF;
+      --border:   #E2E8F0;
+      --t1:       #1A202C;
+      --t2:       #4A5568;
+      --t3:       #718096;
+      --t4:       #A0AEC0;
+      --sh-sm:    0 1px 3px rgba(0,0,0,.06);
+      --sh-md:    0 4px 14px rgba(0,0,0,.10);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: var(--bg);
+      color: var(--t1);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    #app { min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── Topbar ── */
+    .topbar {
+      background: var(--pri);
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      height: 54px;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    }
+    .topbar-brand       { font-size: 20px; font-weight: 800; letter-spacing: -.5px; flex-shrink: 0; }
+    .topbar-brand span  { font-weight: 300; opacity: .65; }
+    .topbar-tag         { font-size: 12px; opacity: .55; flex: 1; }
+    .topbar-btn {
+      background: rgba(255,255,255,.15); border: none; color: white;
+      padding: 6px 14px; border-radius: 7px; font-size: 13px;
+      font-weight: 600; cursor: pointer; transition: background .15s;
+      white-space: nowrap;
+    }
+    .topbar-btn:hover { background: rgba(255,255,255,.28); }
+
+    /* ── Main ── */
+    #main { flex: 1; padding: 24px; max-width: 1200px; margin: 0 auto; width: 100%; }
+
+    /* ── Views ── */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── Warning banner ── */
+    .warn-banner {
+      background: #FEF3C7; border-left: 4px solid #F59E0B;
+      border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;
+      font-size: 13px; color: #78350F; line-height: 1.7; display: none;
+    }
+    .warn-banner code { background: rgba(0,0,0,.07); padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+
+    /* ── Page header ── */
+    .page-hdr        { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+    .page-hdr h2     { font-size: 20px; font-weight: 700; color: var(--pri); flex: 1; }
+    .page-hdr-meta   { font-size: 13px; color: var(--t3); }
+
+    /* ── Card grid ── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 16px;
+    }
+
+    /* ── Levantamento card ── */
+    .lev-card {
+      background: var(--card); border-radius: 12px;
+      box-shadow: var(--sh-sm); border: 1px solid var(--border);
+      overflow: hidden; transition: box-shadow .15s, transform .1s;
+    }
+    .lev-card:hover { box-shadow: var(--sh-md); transform: translateY(-1px); }
+
+    .lev-card-head { padding: 15px 18px 11px; border-bottom: 1px solid var(--border); }
+    .lev-card-cliente { font-size: 16px; font-weight: 700; color: var(--pri); margin-bottom: 5px; }
+    .lev-card-ids     { display: flex; flex-wrap: wrap; gap: 6px; }
+    .lev-card-ids code {
+      font-family: monospace; font-size: 11px;
+      background: var(--pri-lt); color: var(--pri);
+      padding: 2px 7px; border-radius: 4px;
+    }
+
+    .lev-card-body { padding: 11px 18px; }
+    .lev-card-row  { display: flex; justify-content: space-between; font-size: 13px; color: var(--t2); margin-bottom: 5px; }
+    .lev-card-row:last-child { margin-bottom: 0; }
+    .lev-card-row label { color: var(--t3); font-weight: 600; font-size: 12px; }
+
+    .lev-status-wrap {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      padding: 9px 18px; border-top: 1px solid var(--border); background: #FAFBFC;
+    }
+    .lev-card-foot {
+      padding: 10px 18px; display: flex;
+      justify-content: flex-end; border-top: 1px solid var(--border);
+    }
+
+    /* ── Status chips ── */
+    .chip {
+      display: inline-flex; align-items: center;
+      border-radius: 20px; padding: 3px 10px;
+      font-size: 11px; font-weight: 700; white-space: nowrap;
+    }
+    .s-aguardando_cotacao { background: #FEF3C7; color: #92400E; }
+    .s-cotado             { background: #DBEAFE; color: #1E40AF; }
+    .s-aprovado           { background: #D1FAE5; color: #065F46; }
+    .s-comprado           { background: #EDE9FE; color: #4C1D95; }
+    .s-recebido           { background: #E0E7FF; color: #3730A3; }
+    .s-em_calibracao      { background: #FFEDD5; color: #9A3412; }
+    .s-entregue           { background: #DCFCE7; color: #166534; }
+    .s-default            { background: #F1F5F9; color: #475569; }
+
+    /* ── Buttons ── */
+    .btn {
+      border: none; border-radius: 8px; padding: 8px 16px;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      transition: opacity .15s; white-space: nowrap;
+    }
+    .btn:hover:not(:disabled)    { opacity: .82; }
+    .btn:disabled                { opacity: .45; cursor: not-allowed; }
+    .btn-primary { background: var(--pri); color: white; }
+    .btn-ghost   { background: transparent; color: var(--pri); border: 1px solid var(--border); }
+    .btn-sm      { padding: 5px 12px; font-size: 12px; }
+
+    /* ── Back button ── */
+    .btn-back {
+      background: none; border: none; color: var(--pri);
+      font-size: 20px; cursor: pointer; padding: 4px 8px;
+      border-radius: 6px; transition: background .15s; line-height: 1;
+    }
+    .btn-back:hover { background: var(--pri-lt); }
+
+    /* ── Detail header ── */
+    .det-hdr {
+      background: var(--card); border-radius: 12px;
+      padding: 16px 20px; margin-bottom: 18px;
+      box-shadow: var(--sh-sm); border: 1px solid var(--border);
+    }
+    .det-hdr-top    { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .det-cliente    { font-size: 20px; font-weight: 700; color: var(--pri); flex: 1; }
+    .det-meta-grid  { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; }
+    .det-meta-item  { display: flex; flex-direction: column; }
+    .det-meta-label { font-size: 11px; color: var(--t4); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+    .det-meta-val   { font-size: 13px; color: var(--t1); font-weight: 600; }
+    .det-meta-val code { font-family: monospace; font-size: 11px; color: var(--pri); }
+
+    /* ── Vaso group ── */
+    .vaso-group {
+      background: var(--card); border-radius: 12px;
+      box-shadow: var(--sh-sm); border: 1px solid var(--border);
+      margin-bottom: 14px; overflow: hidden;
+    }
+    .vaso-group-hd {
+      background: var(--pri-lt); padding: 9px 18px;
+      display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .vaso-tag  { font-size: 13px; font-weight: 800; color: var(--pri); flex-shrink: 0; }
+    .vaso-nome { font-size: 13px; font-weight: 600; color: var(--t2); flex: 1; }
+    .vaso-id   { font-size: 11px; color: var(--t3); font-style: italic; }
+
+    /* ── Item row ── */
+    .item-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 18px; border-bottom: 1px solid var(--border);
+      transition: background .1s;
+    }
+    .item-row:last-child   { border-bottom: none; }
+    .item-row:hover        { background: #FAFBFC; }
+    .item-row-id {
+      font-family: monospace; font-size: 11px; color: var(--pri);
+      background: var(--pri-lt); padding: 2px 7px; border-radius: 4px;
+      flex-shrink: 0; min-width: 96px; text-align: center;
+    }
+    .item-row-desc    { flex: 1; min-width: 0; }
+    .item-row-title   { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item-row-sub     { font-size: 11px; color: var(--t3); }
+    .item-row-qty     { font-size: 12px; font-weight: 700; color: var(--t2); flex-shrink: 0; min-width: 48px; text-align: center; }
+    .item-row-actions { flex-shrink: 0; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.52); z-index: 100;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-card {
+      background: var(--card); border-radius: 16px;
+      width: 100%; max-width: 560px; max-height: 92vh;
+      overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.28);
+    }
+
+    .modal-head {
+      background: var(--pri); color: white; padding: 15px 18px;
+      display: flex; align-items: flex-start; gap: 12px;
+      border-radius: 16px 16px 0 0; position: sticky; top: 0; z-index: 1;
+    }
+    .modal-head-info  { flex: 1; }
+    .modal-head-id    { font-size: 11px; opacity: .7; font-family: monospace; margin-bottom: 2px; }
+    .modal-head-desc  { font-size: 15px; font-weight: 700; }
+    .modal-close {
+      background: rgba(255,255,255,.18); border: none; color: white;
+      width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+      font-size: 16px; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background .15s; line-height: 1;
+    }
+    .modal-close:hover { background: rgba(255,255,255,.35); }
+
+    .modal-body         { padding: 18px 20px; }
+    .modal-section      { margin-bottom: 16px; }
+    .modal-section-ttl {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--t4); margin-bottom: 10px;
+      padding-bottom: 6px; border-bottom: 1px solid var(--border);
+    }
+    .modal-grid         { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .modal-field        { display: flex; flex-direction: column; }
+    .modal-field-lbl    { font-size: 11px; color: var(--t4); font-weight: 600; margin-bottom: 2px; }
+    .modal-field-val    { font-size: 13px; color: var(--t1); font-weight: 500; }
+    .modal-field-val.muted { color: var(--t3); }
+    .modal-field-val.mono  { font-family: monospace; font-size: 12px; }
+    .modal-full         { grid-column: 1 / -1; }
+
+    .modal-foot {
+      padding: 12px 18px; border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end; gap: 8px;
+      position: sticky; bottom: 0; background: var(--card); border-radius: 0 0 16px 16px;
+    }
+
+    /* ── Form ── */
+    .form-row   { margin-bottom: 10px; }
+    .form-label { font-size: 12px; font-weight: 600; color: var(--t2); display: block; margin-bottom: 4px; }
+    .form-ctrl {
+      width: 100%; padding: 8px 11px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 13px; color: var(--t1); background: white;
+      appearance: none; -webkit-appearance: none;
+    }
+    .form-ctrl:focus { outline: none; border-color: var(--pri); }
+
+    /* ── Loading overlay ── */
+    .loading-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.4); z-index: 200;
+      align-items: center; justify-content: center;
+    }
+    .loading-overlay.active { display: flex; }
+    .loading-box {
+      background: white; border-radius: 14px;
+      padding: 22px 30px; text-align: center;
+      font-size: 14px; font-weight: 600; color: var(--pri);
+    }
+    .spinner {
+      width: 34px; height: 34px;
+      border: 4px solid var(--border); border-top-color: var(--pri);
+      border-radius: 50%; animation: spin .7s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: #1A202C; color: white; padding: 11px 20px;
+      border-radius: 8px; font-size: 13px; z-index: 300;
+      max-width: 90vw; text-align: center; display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,.2);
+    }
+    .toast.show    { display: block; }
+    .toast.success { background: #276749; }
+    .toast.error   { background: #9B2C2C; }
+
+    /* ── Empty state ── */
+    .empty { text-align: center; padding: 52px 24px; color: var(--t3); }
+    .empty-icon  { font-size: 46px; margin-bottom: 12px; }
+    .empty-title { font-size: 15px; font-weight: 700; color: var(--t2); margin-bottom: 5px; }
+    .empty-sub   { font-size: 13px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      #main { padding: 14px; }
+      .card-grid       { grid-template-columns: 1fr; }
+      .det-meta-grid   { grid-template-columns: 1fr 1fr; }
+      .modal-grid      { grid-template-columns: 1fr; }
+      .item-row-id     { min-width: 76px; font-size: 10px; }
+      .item-row-qty    { display: none; }
+    }
+
+    .mt8  { margin-top: 8px; }
+    .mt16 { margin-top: 16px; }
+
+    /* ── Topbar nav ── */
+    .topbar-nav { display: flex; gap: 4px; flex: 1; }
+    .topbar-nav-btn {
+      background: transparent; border: none; color: rgba(255,255,255,.65);
+      padding: 6px 14px; border-radius: 7px; font-size: 13px;
+      font-weight: 600; cursor: pointer; transition: background .15s, color .15s;
+      white-space: nowrap;
+    }
+    .topbar-nav-btn:hover   { background: rgba(255,255,255,.15); color: white; }
+    .topbar-nav-btn.active  { background: rgba(255,255,255,.22); color: white; }
+
+    /* ── Catalog table ── */
+    .cat-toolbar {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;
+    }
+    .cat-table-wrap { overflow-x: auto; }
+    .cat-table {
+      width: 100%; border-collapse: collapse; font-size: 13px;
+      background: var(--card); border-radius: 12px; overflow: hidden;
+      box-shadow: var(--sh-sm); border: 1px solid var(--border);
+    }
+    .cat-table thead tr { background: var(--pri); color: white; }
+    .cat-table th {
+      padding: 10px 14px; text-align: left; font-size: 11px;
+      font-weight: 700; letter-spacing: .05em; white-space: nowrap;
+    }
+    .cat-table td {
+      padding: 9px 14px; border-bottom: 1px solid var(--border);
+      color: var(--t2); vertical-align: middle;
+    }
+    .cat-table tr:last-child td { border-bottom: none; }
+    .cat-table tr:hover td { background: #FAFBFC; }
+    .cat-table td.mono { font-family: monospace; font-size: 11px; color: var(--pri); }
+    .cat-table td.desc { max-width: 320px; white-space: normal; color: var(--t1); }
+    .cat-table .act-btns { display: flex; gap: 6px; align-items: center; white-space: nowrap; }
+    .badge-ativo   { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 12px;
+                     background: #D1FAE5; color: #065F46; }
+    .badge-inativo { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 12px;
+                     background: #FEE2E2; color: #991B1B; }
+
+    /* ── Form modal (wider) ── */
+    .modal-card-lg { max-width: 720px; }
+    .form-grid-2 {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .form-grid-3 {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+    }
+    .form-full { grid-column: 1 / -1; }
+    .preview-box {
+      background: var(--pri-lt); border: 1px solid #B8D0E8;
+      border-radius: 8px; padding: 10px 14px;
+      font-size: 13px; color: var(--pri); font-weight: 600;
+      min-height: 38px; margin-top: 4px;
+    }
+    .preview-box.empty { color: var(--t4); font-weight: 400; font-style: italic; }
+
+    /* ── Kit component rows ── */
+    .comp-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+    .comp-row  { display: flex; align-items: center; gap: 8px; }
+    .comp-row input[type="text"]   { flex: 1; }
+    .comp-row input[type="number"] { width: 64px; flex-shrink: 0; }
+    .comp-row .btn-rm {
+      background: none; border: none; color: var(--t4);
+      font-size: 18px; cursor: pointer; line-height: 1;
+      padding: 2px 6px; border-radius: 4px; flex-shrink: 0;
+    }
+    .comp-row .btn-rm:hover { background: #FEE2E2; color: #991B1B; }
+
+    @media (max-width: 640px) {
+      .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; }
+      .cat-table td.desc { max-width: 160px; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Topbar ── -->
+  <header class="topbar">
+    <div class="topbar-brand">Tap<span>Parts</span></div>
+    <nav class="topbar-nav">
+      <button class="topbar-nav-btn active" id="nav-lev"  onclick="navPara('lista')">Levantamentos FieldTap</button>
+      <button class="topbar-nav-btn"        id="nav-cat"  onclick="navPara('catalogo')">Catálogo</button>
+      <button class="topbar-nav-btn"        id="nav-kits" onclick="navPara('kits')">Kits de Instalação</button>
+    </nav>
+    <button class="topbar-btn" onclick="recarregar()">&#8635; Atualizar</button>
+  </header>
+
+  <!-- ── Main content ── -->
+  <div id="main">
+
+    <!-- ══════════════════════════════════════
+         VIEW 1 — LISTA DE LEVANTAMENTOS
+    ═══════════════════════════════════════════ -->
+    <div class="view active" id="view-lista">
+
+      <div class="warn-banner" id="url-warning">
+        <strong>&#9888; URL do GAS não configurada.</strong><br>
+        Abra <strong>TapParts_Beta.html</strong> em um editor de texto, localize a linha:<br>
+        <code>const GAS_URL = 'COLE_AQUI_A_URL_DO_GAS';</code><br>
+        e substitua pelo endereço do Web App implantado no Google Apps Script.
+      </div>
+
+      <div class="page-hdr">
+        <h2>Levantamentos</h2>
+        <span class="page-hdr-meta" id="lista-meta"></span>
+      </div>
+
+      <div class="card-grid" id="lev-grid">
+        <div style="grid-column:1/-1">
+          <div class="empty">
+            <div class="spinner" style="margin:0 auto"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         VIEW 2 — DETALHE DO LEVANTAMENTO
+    ═══════════════════════════════════════════ -->
+    <div class="view" id="view-detalhe">
+
+      <div class="det-hdr">
+        <div class="det-hdr-top">
+          <button class="btn-back" onclick="voltarLista()" title="Voltar">&#8592;</button>
+          <div class="det-cliente" id="det-cliente">—</div>
+        </div>
+        <div class="det-meta-grid" id="det-meta-grid"></div>
+      </div>
+
+      <div id="det-itens-wrapper">
+        <div class="empty">
+          <div class="spinner" style="margin:0 auto"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         VIEW 3 — CATÁLOGO DE MANÔMETROS
+    ═══════════════════════════════════════════ -->
+    <div class="view" id="view-catalogo">
+      <div class="page-hdr">
+        <h2>Catálogo de Manômetros</h2>
+        <span class="page-hdr-meta" id="cat-meta"></span>
+      </div>
+      <div class="cat-toolbar">
+        <button class="btn btn-primary btn-sm" onclick="novoManometro()">+ Novo manômetro</button>
+      </div>
+      <div class="cat-table-wrap">
+        <table class="cat-table" id="cat-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Descrição</th><th>Escala</th><th>Caixa</th><th>Calib.</th><th>Status</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="cat-tbody">
+            <tr><td colspan="7" style="text-align:center;padding:32px">
+              <div class="spinner" style="margin:0 auto 10px"></div>Carregando...
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         VIEW 4 — KITS DE INSTALAÇÃO
+    ═══════════════════════════════════════════ -->
+    <div class="view" id="view-kits">
+      <div class="page-hdr">
+        <h2>Kits de Instalação</h2>
+        <span class="page-hdr-meta" id="kits-meta"></span>
+      </div>
+      <div class="cat-toolbar">
+        <button class="btn btn-primary btn-sm" onclick="novoKit()">+ Novo kit</button>
+      </div>
+      <div class="cat-table-wrap">
+        <table class="cat-table" id="kits-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Nome</th><th>Bitola</th><th>Tipo</th><th>Componentes</th><th>Form. RS</th><th>Status</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="kits-tbody">
+            <tr><td colspan="8" style="text-align:center;padding:32px">
+              <div class="spinner" style="margin:0 auto 10px"></div>Carregando...
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /#main -->
+</div><!-- /#app -->
+
+<!-- ══════════════════════════════════════
+     MODAL — DETALHE DO ITEM
+═══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-overlay" onclick="_fecharSeOverlay(event)">
+  <div class="modal-card" id="modal-card">
+
+    <div class="modal-head">
+      <div class="modal-head-info">
+        <div class="modal-head-id"  id="modal-item-id">—</div>
+        <div class="modal-head-desc" id="modal-item-desc">—</div>
+      </div>
+      <button class="modal-close" onclick="_fecharModal()" title="Fechar">&#10005;</button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Equipamento e Especificações -->
+      <div class="modal-section">
+        <div class="modal-section-ttl">Equipamento e Especificações</div>
+        <div class="modal-grid">
+          <div class="modal-field">
+            <span class="modal-field-lbl">Tag / ID do vaso</span>
+            <span class="modal-field-val" id="m-vaso">—</span>
+          </div>
+          <div class="modal-field">
+            <span class="modal-field-lbl">Nome do vaso</span>
+            <span class="modal-field-val" id="m-nome-vaso">—</span>
+          </div>
+          <div class="modal-field">
+            <span class="modal-field-lbl">Quantidade</span>
+            <span class="modal-field-val" id="m-qtd">—</span>
+          </div>
+          <div class="modal-field">
+            <span class="modal-field-lbl">Escala</span>
+            <span class="modal-field-val" id="m-escala">—</span>
+          </div>
+          <div class="modal-field">
+            <span class="modal-field-lbl">Requer calibração NR-13</span>
+            <span class="modal-field-val" id="m-calibracao">—</span>
+          </div>
+          <div class="modal-field">
+            <span class="modal-field-lbl">Requer lacre</span>
+            <span class="modal-field-val" id="m-lacre">—</span>
+          </div>
+          <div class="modal-field modal-full" id="m-obs-wrap" style="display:none">
+            <span class="modal-field-lbl">Observação do campo</span>
+            <span class="modal-field-val" id="m-obs">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kit -->
+      <div class="modal-section" id="m-section-kit" style="display:none">
+        <div class="modal-section-ttl">Kit de Instalação</div>
+        <div class="modal-grid">
+          <div class="modal-field">
+            <span class="modal-field-lbl">ID do kit</span>
+            <span class="modal-field-val mono" id="m-kit-id">—</span>
+          </div>
+          <div class="modal-field modal-full">
+            <span class="modal-field-lbl">Componentes</span>
+            <span class="modal-field-val" id="m-kit-comps">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status e Fornecimento -->
+      <div class="modal-section">
+        <div class="modal-section-ttl">Status e Fornecimento</div>
+        <div class="modal-grid">
+          <div class="modal-field">
+            <span class="modal-field-lbl">Status atual</span>
+            <span class="modal-field-val" id="m-status">—</span>
+          </div>
+          <div class="modal-field">
+            <span class="modal-field-lbl">Aprovação cliente</span>
+            <span class="modal-field-val" id="m-aprov">—</span>
+          </div>
+          <div class="modal-field">
+            <span class="modal-field-lbl">Fornecedor</span>
+            <span class="modal-field-val muted" id="m-fornecedor">—</span>
+          </div>
+          <div class="modal-field">
+            <span class="modal-field-lbl">Valor cotado</span>
+            <span class="modal-field-val muted" id="m-valor">—</span>
+          </div>
+          <div class="modal-field">
+            <span class="modal-field-lbl">Prazo de entrega</span>
+            <span class="modal-field-val muted" id="m-prazo">—</span>
+          </div>
+          <div class="modal-field">
+            <span class="modal-field-lbl">Origem</span>
+            <span class="modal-field-val" id="m-origem">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Datas -->
+      <div class="modal-section">
+        <div class="modal-section-ttl">Datas</div>
+        <div class="modal-grid">
+          <div class="modal-field">
+            <span class="modal-field-lbl">Criação</span>
+            <span class="modal-field-val mono" id="m-ts-criacao">—</span>
+          </div>
+          <div class="modal-field">
+            <span class="modal-field-lbl">Última atualização</span>
+            <span class="modal-field-val mono" id="m-ts-update">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Atualizar status -->
+      <div class="modal-section">
+        <div class="modal-section-ttl">Atualizar Status</div>
+        <div class="form-row">
+          <label class="form-label" for="sel-status">Novo status</label>
+          <select class="form-ctrl" id="sel-status">
+            <option value="aguardando_cotacao">Aguardando cotação</option>
+            <option value="cotado">Cotado</option>
+            <option value="aprovado">Aprovado</option>
+            <option value="comprado">Comprado</option>
+            <option value="recebido">Recebido</option>
+            <option value="em_calibracao">Em calibração</option>
+            <option value="entregue">Entregue</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="inp-resp">Responsável</label>
+          <input type="text" class="form-ctrl" id="inp-resp" value="ADM">
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="inp-obs-upd">Observação</label>
+          <input type="text" class="form-ctrl" id="inp-obs-upd" placeholder="(opcional)">
+        </div>
+      </div>
+
+    </div><!-- /.modal-body -->
+
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" onclick="_fecharModal()">Fechar</button>
+      <button class="btn btn-primary btn-sm" id="btn-atualizar" onclick="atualizarStatus()">
+        Atualizar status
+      </button>
+    </div>
+
+  </div><!-- /.modal-card -->
+</div><!-- /.modal-overlay -->
+
+<!-- ══════════════════════════════════════
+     MODAL — FORMULÁRIO MANÔMETRO
+═══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-mano-overlay" onclick="_fecharSeOverlayId(event,'modal-mano-overlay')">
+  <div class="modal-card modal-card-lg">
+    <div class="modal-head">
+      <div class="modal-head-info">
+        <div class="modal-head-id" id="mano-form-id-lbl">Novo</div>
+        <div class="modal-head-desc">Manômetro / Vacuômetro</div>
+      </div>
+      <button class="modal-close" onclick="_fecharModalId('modal-mano-overlay')" title="Fechar">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="mano-id">
+      <div class="form-grid-3">
+        <div class="form-row">
+          <label class="form-label" for="mano-tipo">Tipo</label>
+          <select class="form-ctrl" id="mano-tipo" oninput="_atualizarPreviewMano()">
+            <option>Manômetro</option>
+            <option>Vacuômetro</option>
+            <option>Manovacuômetro</option>
+            <option>Pressostato</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="mano-fluido">Fluido / Tipo</label>
+          <select class="form-ctrl" id="mano-fluido" oninput="_atualizarPreviewMano()">
+            <option>Glicerinado</option>
+            <option>Seco</option>
+            <option>Inox</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="mano-caixa">Caixa (mm)</label>
+          <input type="text" class="form-ctrl" id="mano-caixa" placeholder="Ex: 63" oninput="_atualizarPreviewMano()">
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="mano-rosca">Rosca</label>
+          <input type="text" class="form-ctrl" id="mano-rosca" placeholder='Ex: 1/4"' oninput="_atualizarPreviewMano()">
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="mano-tipo-rosca">Tipo rosca</label>
+          <select class="form-ctrl" id="mano-tipo-rosca" oninput="_atualizarPreviewMano()">
+            <option>NPT</option>
+            <option>BSP</option>
+            <option>Métrica</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="mano-entrada">Entrada</label>
+          <select class="form-ctrl" id="mano-entrada" oninput="_atualizarPreviewMano()">
+            <option>Reta</option>
+            <option>Angular</option>
+          </select>
+        </div>
+        <div class="form-row form-full">
+          <label class="form-label" for="mano-escala">Escala padrão</label>
+          <input type="text" class="form-ctrl" id="mano-escala" placeholder='Ex: 0-14 kgf/cm²' oninput="_atualizarPreviewMano()">
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="mano-marca">Marca</label>
+          <input type="text" class="form-ctrl" id="mano-marca" placeholder="Ex: Pressure" oninput="_atualizarPreviewMano()">
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="mano-modelo">Modelo (opcional)</label>
+          <input type="text" class="form-ctrl" id="mano-modelo" placeholder="(opcional)">
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="mano-calib">Requer calibração NR-13</label>
+          <select class="form-ctrl" id="mano-calib">
+            <option value="false">Não</option>
+            <option value="true">Sim</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="mano-ativo">Status</label>
+          <select class="form-ctrl" id="mano-ativo">
+            <option value="true">Ativo</option>
+            <option value="false">Inativo</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row mt8">
+        <label class="form-label">Descrição gerada automaticamente</label>
+        <div class="preview-box empty" id="mano-preview">Preencha os campos acima</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" onclick="_fecharModalId('modal-mano-overlay')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="btn-salvar-mano" onclick="salvarManometro()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL — FORMULÁRIO KIT
+═══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-kit-overlay" onclick="_fecharSeOverlayId(event,'modal-kit-overlay')">
+  <div class="modal-card modal-card-lg">
+    <div class="modal-head">
+      <div class="modal-head-info">
+        <div class="modal-head-id" id="kit-form-id-lbl">Novo</div>
+        <div class="modal-head-desc">Kit de Instalação</div>
+      </div>
+      <button class="modal-close" onclick="_fecharModalId('modal-kit-overlay')" title="Fechar">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="kit-id">
+      <div class="form-grid-2">
+        <div class="form-row form-full">
+          <label class="form-label" for="kit-nome">Nome do kit</label>
+          <input type="text" class="form-ctrl" id="kit-nome" placeholder='Ex: Kit instalação simples 1/4"'>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="kit-bitola">Bitola</label>
+          <input type="text" class="form-ctrl" id="kit-bitola" placeholder='Ex: 1/4"'>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="kit-tipo">Tipo de kit</label>
+          <select class="form-ctrl" id="kit-tipo">
+            <option value="simples">Simples</option>
+            <option value="dcbi">DCBI</option>
+            <option value="flangeado">Flangeado</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="kit-formalizacao">Inclui formalização RS</label>
+          <select class="form-ctrl" id="kit-formalizacao">
+            <option value="false">Não</option>
+            <option value="true">Sim</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="kit-ativo">Status</label>
+          <select class="form-ctrl" id="kit-ativo">
+            <option value="true">Ativo</option>
+            <option value="false">Inativo</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row mt8">
+        <label class="form-label">Componentes do kit</label>
+        <div class="comp-list" id="comp-list"></div>
+        <button class="btn btn-ghost btn-sm mt8" onclick="_addComponenteRow('','1')" type="button">+ Adicionar componente</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" onclick="_fecharModalId('modal-kit-overlay')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="btn-salvar-kit" onclick="salvarKit()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <div id="loading-msg">Aguarde...</div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// =============================================================================
+// ENGETAP — TapParts
+// TapParts_Beta.html — Sprint S2: painel de levantamentos reais via GAS
+// =============================================================================
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CONFIGURAÇÃO — edite SOMENTE esta linha com a URL do Web App GAS implantado
+// ─────────────────────────────────────────────────────────────────────────────
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyn3nTtrMM4Y8tOK7qyIIzAYA7WhHK4yXKd4BmT3urPaizwaO4Lhmq8U3wMfOW-GUCGmw/exec';
+// ─────────────────────────────────────────────────────────────────────────────
+
+// =============================================================================
+// ESTADO
+// =============================================================================
+
+var estado = {
+  levantamentos:   [],   // todos os levantamentos carregados
+  lev_selecionado: null, // levantamento aberto no detalhe
+  itens_lev:       [],   // itens do levantamento aberto
+  item_atual:      null  // item aberto no modal
+};
+
+// =============================================================================
+// MAPEAMENTO DE STATUS
+// =============================================================================
+
+var STATUS_LABEL = {
+  aguardando_cotacao: 'Aguardando cotação',
+  cotado:             'Cotado',
+  aprovado:           'Aprovado',
+  comprado:           'Comprado',
+  recebido:           'Recebido',
+  em_calibracao:      'Em calibração',
+  entregue:           'Entregue'
+};
+
+var STATUS_KNOWN = ['aguardando_cotacao','cotado','aprovado','comprado','recebido','em_calibracao','entregue'];
+
+function statusLabel(s) { return STATUS_LABEL[s] || String(s || 'Sem status'); }
+function statusCls(s)   { return STATUS_KNOWN.indexOf(s) !== -1 ? 's-' + s : 's-default'; }
+
+// =============================================================================
+// COMUNICAÇÃO COM O GAS
+// =============================================================================
+
+async function gasGet(action, params) {
+  var url = new URL(GAS_URL);
+  url.searchParams.set('action', action);
+  if (params) {
+    Object.keys(params).forEach(function(k) { url.searchParams.set(k, params[k]); });
+  }
+  var res = await fetch(url.toString(), { redirect: 'follow' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  var text = await res.text();
+  var data;
+  try { data = JSON.parse(text); } catch(e) { throw new Error('Resposta inválida do servidor'); }
+  if (data.status === 'erro') throw new Error(data.mensagem || data.codigo);
+  return data;
+}
+
+// POST com Content-Type: text/plain evita preflight CORS — GAS lê e.postData.contents normalmente
+async function gasPost(body) {
+  var res = await fetch(GAS_URL, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'text/plain;charset=UTF-8' }
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  var text = await res.text();
+  var data;
+  try { data = JSON.parse(text); } catch(e) { throw new Error('Resposta inválida do servidor'); }
+  if (data.status === 'erro') throw new Error(data.mensagem || data.codigo);
+  return data;
+}
+
+// =============================================================================
+// UTILITÁRIOS DE INTERFACE
+// =============================================================================
+
+function mostrarView(id) {
+  document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function mostrarLoading(msg) {
+  document.getElementById('loading-msg').textContent = msg || 'Aguarde...';
+  document.getElementById('loading-overlay').classList.add('active');
+}
+function esconderLoading() { document.getElementById('loading-overlay').classList.remove('active'); }
+
+var _toastT;
+function showToast(msg, tipo) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (tipo ? ' ' + tipo : '');
+  clearTimeout(_toastT);
+  _toastT = setTimeout(function() { el.classList.remove('show'); }, 3200);
+}
+
+function esc(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function txt(v) { return String(v == null ? '' : v); }
+
+function ouVazio(v) {
+  var s = txt(v).trim();
+  return s === '' ? '—' : s;
+}
+
+function formatarData(v) {
+  if (!v) return '—';
+  var s = txt(v);
+  var mISO = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (mISO) return mISO[3]+'/'+mISO[2]+'/'+mISO[1]+' '+mISO[4]+':'+mISO[5];
+  var mD = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (mD) return mD[3]+'/'+mD[2]+'/'+mD[1];
+  return s.length > 30 ? s.substring(0,25)+'…' : s;
+}
+
+// =============================================================================
+// VIEW 1 — LISTA DE LEVANTAMENTOS
+// =============================================================================
+
+async function carregarLevantamentos() {
+  var grid = document.getElementById('lev-grid');
+  grid.innerHTML = '<div style="grid-column:1/-1"><div class="empty"><div class="spinner" style="margin:0 auto"></div><div style="margin-top:12px">Carregando levantamentos...</div></div></div>';
+
+  try {
+    var res = await gasGet('getLevantamentosByCliente');
+    var lista = res.levantamentos || [];
+    estado.levantamentos = lista;
+
+    document.getElementById('lista-meta').textContent =
+      lista.length ? lista.length + ' levantamento' + (lista.length > 1 ? 's' : '') : '';
+
+    if (!lista.length) {
+      grid.innerHTML =
+        '<div style="grid-column:1/-1"><div class="empty">' +
+        '<div class="empty-icon">&#128203;</div>' +
+        '<div class="empty-title">Nenhum levantamento encontrado</div>' +
+        '<div class="empty-sub">Envie um levantamento pelo FieldTap para que ele apareça aqui.</div>' +
+        '</div></div>';
+      return;
+    }
+
+    grid.innerHTML = '';
+    lista.forEach(function(lev) { grid.appendChild(_criarCardLev(lev)); });
+
+  } catch (err) {
+    grid.innerHTML =
+      '<div style="grid-column:1/-1"><div class="empty">' +
+      '<div class="empty-icon">&#9888;</div>' +
+      '<div class="empty-title">Erro ao carregar levantamentos</div>' +
+      '<div class="empty-sub">' + esc(err.message) + '</div>' +
+      '</div></div>';
+  }
+}
+
+function _criarCardLev(lev) {
+  // Monta chips de resumo de status
+  var resumoHTML = '';
+  if (lev.resumo_status && typeof lev.resumo_status === 'object') {
+    Object.keys(lev.resumo_status).forEach(function(s) {
+      resumoHTML += '<span class="chip ' + statusCls(s) + '">' +
+        esc(lev.resumo_status[s]) + ' ' + esc(statusLabel(s).toLowerCase()) + '</span>';
+    });
+  } else if (lev.status_geral) {
+    resumoHTML = '<span class="chip ' + statusCls(lev.status_geral) + '">' +
+      esc(statusLabel(lev.status_geral)) + '</span>';
+  }
+
+  var card = document.createElement('div');
+  card.className = 'lev-card';
+  card.innerHTML =
+    '<div class="lev-card-head">' +
+      '<div class="lev-card-cliente">' + esc(lev.cliente) + '</div>' +
+      '<div class="lev-card-ids">' +
+        '<code>' + esc(lev.id_os) + '</code>' +
+        '<code>' + esc(lev.id_levantamento) + '</code>' +
+      '</div>' +
+    '</div>' +
+    '<div class="lev-card-body">' +
+      '<div class="lev-card-row"><label>Inspetor</label><span>' + esc(lev.nome_inspetor) + '</span></div>' +
+      '<div class="lev-card-row"><label>Enviado em</label><span>' + esc(formatarData(lev.timestamp_envio)) + '</span></div>' +
+      '<div class="lev-card-row"><label>Total de itens</label><span>' +
+        esc(lev.total_itens) + ' item' + (lev.total_itens != 1 ? 's' : '') + '</span></div>' +
+    '</div>' +
+    (resumoHTML ? '<div class="lev-status-wrap">' + resumoHTML + '</div>' : '') +
+    '<div class="lev-card-foot">' +
+      '<button class="btn btn-primary btn-sm">Ver levantamento &#8594;</button>' +
+    '</div>';
+
+  card.querySelector('button').addEventListener('click', function() { selecionarLev(lev); });
+  return card;
+}
+
+// =============================================================================
+// VIEW 2 — DETALHE DO LEVANTAMENTO
+// =============================================================================
+
+function selecionarLev(lev) {
+  estado.lev_selecionado = lev;
+
+  document.getElementById('det-cliente').textContent = lev.cliente;
+
+  document.getElementById('det-meta-grid').innerHTML =
+    _metaItem('OS', '<code>' + esc(lev.id_os) + '</code>') +
+    _metaItem('Levantamento', '<code>' + esc(lev.id_levantamento) + '</code>') +
+    _metaItem('Inspetor', esc(lev.nome_inspetor)) +
+    _metaItem('Enviado em', esc(formatarData(lev.timestamp_envio))) +
+    _metaItem('Total de itens', esc(lev.total_itens));
+
+  mostrarView('view-detalhe');
+  carregarItens(lev.id_levantamento);
+}
+
+function _metaItem(label, valHTML) {
+  return '<div class="det-meta-item">' +
+    '<span class="det-meta-label">' + esc(label) + '</span>' +
+    '<span class="det-meta-val">' + valHTML + '</span>' +
+    '</div>';
+}
+
+async function carregarItens(idLev) {
+  var wrapper = document.getElementById('det-itens-wrapper');
+  wrapper.innerHTML = '<div class="empty"><div class="spinner" style="margin:0 auto"></div><div style="margin-top:12px">Carregando itens...</div></div>';
+
+  try {
+    var res = await gasGet('getItensByLevantamento', { id_levantamento: idLev });
+    var itens = res.itens || [];
+    estado.itens_lev = itens;
+
+    if (!itens.length) {
+      wrapper.innerHTML =
+        '<div class="empty"><div class="empty-icon">&#128270;</div>' +
+        '<div class="empty-title">Nenhum item encontrado</div>' +
+        '<div class="empty-sub">Este levantamento não possui itens registrados.</div></div>';
+      return;
+    }
+
+    // Agrupa por vaso (mantém ordem de aparição)
+    var grupos = {};
+    var ordemVasos = [];
+    itens.forEach(function(item) {
+      var key = item.id_vaso || 'sem_vaso';
+      if (!grupos[key]) {
+        grupos[key] = { ref: item, itens: [] };
+        ordemVasos.push(key);
+      }
+      grupos[key].itens.push(item);
+    });
+
+    wrapper.innerHTML = '';
+    ordemVasos.forEach(function(key) {
+      wrapper.appendChild(_criarGrupoVaso(grupos[key]));
+    });
+
+  } catch (err) {
+    wrapper.innerHTML =
+      '<div class="empty"><div class="empty-icon">&#9888;</div>' +
+      '<div class="empty-title">Erro ao carregar itens</div>' +
+      '<div class="empty-sub">' + esc(err.message) + '</div></div>';
+  }
+}
+
+function _criarGrupoVaso(grupo) {
+  var ref = grupo.ref;
+  var el  = document.createElement('div');
+  el.className = 'vaso-group';
+
+  var rowsHTML = '';
+  grupo.itens.forEach(function(item) {
+    var sub = [];
+    if (item.id_kit && txt(item.id_kit).trim()) sub.push('Kit: ' + esc(item.id_kit));
+    if (item.observacao && txt(item.observacao).trim()) sub.push(esc(item.observacao));
+
+    rowsHTML +=
+      '<div class="item-row">' +
+        '<span class="item-row-id">' + esc(item.id_item) + '</span>' +
+        '<div class="item-row-desc">' +
+          '<div class="item-row-title">' + esc(item.descricao_curta || item.tipo_acessorio || '—') + '</div>' +
+          (sub.length ? '<div class="item-row-sub">' + sub.join(' · ') + '</div>' : '') +
+        '</div>' +
+        '<div class="item-row-qty">Qtd: ' + esc(item.quantidade) + '</div>' +
+        '<div style="flex-shrink:0">' +
+          '<span class="chip ' + statusCls(item.status) + '">' + esc(statusLabel(item.status)) + '</span>' +
+        '</div>' +
+        '<div class="item-row-actions">' +
+          '<button class="btn btn-ghost btn-sm" onclick="abrirModal(\'' +
+            esc(item.id_item).replace(/'/g, "\\'") + '\')">Detalhar</button>' +
+        '</div>' +
+      '</div>';
+  });
+
+  el.innerHTML =
+    '<div class="vaso-group-hd">' +
+      '<span class="vaso-tag">' + esc(ref.tag_vaso || '—') + '</span>' +
+      '<span class="vaso-nome">' + esc(ref.nome_vaso || 'Equipamento não identificado') + '</span>' +
+      '<span class="vaso-id">' + esc(ref.id_vaso || '') + '</span>' +
+    '</div>' +
+    rowsHTML;
+
+  return el;
+}
+
+function voltarLista() {
+  estado.lev_selecionado = null;
+  estado.itens_lev = [];
+  _viewAtual = 'lista';
+  document.querySelectorAll('.topbar-nav-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('nav-lev').classList.add('active');
+  mostrarView('view-lista');
+}
+
+// =============================================================================
+// MODAL — DETALHE DO ITEM
+// =============================================================================
+
+function abrirModal(idItem) {
+  var item = null;
+  for (var i = 0; i < estado.itens_lev.length; i++) {
+    if (estado.itens_lev[i].id_item === idItem) { item = estado.itens_lev[i]; break; }
+  }
+  if (!item) { showToast('Item não encontrado.', 'error'); return; }
+  estado.item_atual = item;
+
+  // Cabeçalho
+  document.getElementById('modal-item-id').textContent   = item.id_item || '—';
+  document.getElementById('modal-item-desc').textContent = item.descricao_curta || item.tipo_acessorio || '—';
+
+  // Equipamento
+  document.getElementById('m-vaso').textContent =
+    txt(item.tag_vaso) + (item.id_vaso ? ' (' + item.id_vaso + ')' : '');
+  document.getElementById('m-nome-vaso').textContent = ouVazio(item.nome_vaso);
+  document.getElementById('m-qtd').textContent = ouVazio(item.quantidade);
+
+  // Escala
+  var escStr = '—';
+  var ei = txt(item.escala_inicio), ef = txt(item.escala_fim), eu = txt(item.escala_unidade);
+  if (ei.trim() !== '') escStr = ei + ' a ' + ef + (eu.trim() ? ' ' + eu : '');
+  document.getElementById('m-escala').textContent = escStr;
+
+  document.getElementById('m-calibracao').textContent =
+    txt(item.requer_calibracao) === 'true' ? 'Sim (NR-13)' : 'Não';
+  document.getElementById('m-lacre').textContent =
+    txt(item.requer_lacre) === 'true' ? 'Sim' : 'Não';
+
+  // Observação
+  var obsWrap = document.getElementById('m-obs-wrap');
+  if (item.observacao && txt(item.observacao).trim()) {
+    obsWrap.style.display = 'flex';
+    document.getElementById('m-obs').textContent = item.observacao;
+  } else {
+    obsWrap.style.display = 'none';
+  }
+
+  // Kit
+  var kitSec = document.getElementById('m-section-kit');
+  if (item.id_kit && txt(item.id_kit).trim()) {
+    kitSec.style.display = 'block';
+    document.getElementById('m-kit-id').textContent = item.id_kit;
+
+    var comps = item.componentes_kit;
+    if (typeof comps === 'string' && comps.trim()) {
+      try { comps = JSON.parse(comps); } catch(e) { comps = null; }
+    }
+    var compsText = '—';
+    if (Array.isArray(comps) && comps.length) {
+      compsText = comps.map(function(c) {
+        return txt(c.descricao || c) + (c.qtd ? ' (×' + c.qtd + ')' : '');
+      }).join(', ');
+    }
+    document.getElementById('m-kit-comps').textContent = compsText;
+  } else {
+    kitSec.style.display = 'none';
+  }
+
+  // Status
+  var statusEl = document.getElementById('m-status');
+  statusEl.textContent = statusLabel(item.status);
+  statusEl.className   = 'modal-field-val chip ' + statusCls(item.status);
+
+  // Fornecimento
+  document.getElementById('m-aprov').textContent    = ouVazio(item.status_aprovacao_cliente);
+  document.getElementById('m-fornecedor').textContent = ouVazio(item.fornecedor);
+  document.getElementById('m-valor').textContent    = ouVazio(item.valor_cotado);
+  document.getElementById('m-prazo').textContent    = ouVazio(item.prazo_entrega);
+  document.getElementById('m-origem').textContent   = ouVazio(item.origem);
+
+  // Datas
+  document.getElementById('m-ts-criacao').textContent = formatarData(item.timestamp_criacao);
+  document.getElementById('m-ts-update').textContent  = formatarData(item.timestamp_ultima_atualizacao);
+
+  // Pré-seleciona status atual no select
+  var sel = document.getElementById('sel-status');
+  for (var j = 0; j < sel.options.length; j++) {
+    if (sel.options[j].value === item.status) { sel.selectedIndex = j; break; }
+  }
+  document.getElementById('inp-resp').value    = 'ADM';
+  document.getElementById('inp-obs-upd').value = '';
+
+  document.getElementById('modal-overlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function _fecharSeOverlay(evt) {
+  if (evt.target === evt.currentTarget) _fecharModal();
+}
+
+function _fecharModal() {
+  document.getElementById('modal-overlay').classList.remove('active');
+  document.body.style.overflow = '';
+  estado.item_atual = null;
+}
+
+// =============================================================================
+// ATUALIZAÇÃO DE STATUS
+// =============================================================================
+
+async function atualizarStatus() {
+  var item = estado.item_atual;
+  if (!item) return;
+
+  var novoStatus  = document.getElementById('sel-status').value;
+  var responsavel = document.getElementById('inp-resp').value.trim() || 'ADM';
+  var observacao  = document.getElementById('inp-obs-upd').value.trim();
+
+  if (novoStatus === item.status) {
+    showToast('O status selecionado é o mesmo que o atual.', '');
+    return;
+  }
+
+  mostrarLoading('Atualizando status...');
+  document.getElementById('btn-atualizar').disabled = true;
+
+  try {
+    await gasPost({
+      action:      'atualizarStatusItem',
+      id_item:     item.id_item,
+      novo_status: novoStatus,
+      responsavel: responsavel,
+      observacao:  observacao
+    });
+
+    esconderLoading();
+    document.getElementById('btn-atualizar').disabled = false;
+    _fecharModal();
+    showToast('Status atualizado para "' + statusLabel(novoStatus) + '"!', 'success');
+
+    // Recarrega itens para refletir a mudança na lista
+    if (estado.lev_selecionado) carregarItens(estado.lev_selecionado.id_levantamento);
+
+  } catch (err) {
+    esconderLoading();
+    document.getElementById('btn-atualizar').disabled = false;
+    showToast('Erro ao atualizar: ' + err.message, 'error');
+  }
+}
+
+// =============================================================================
+// NAVEGAÇÃO S3
+// =============================================================================
+
+var _viewAtual = 'lista'; // 'lista' | 'catalogo' | 'kits'
+
+function navPara(destino) {
+  _viewAtual = destino;
+  document.querySelectorAll('.topbar-nav-btn').forEach(function(b) { b.classList.remove('active'); });
+  if (destino === 'lista') {
+    document.getElementById('nav-lev').classList.add('active');
+    mostrarView('view-lista');
+    carregarLevantamentos();
+  } else if (destino === 'catalogo') {
+    document.getElementById('nav-cat').classList.add('active');
+    mostrarView('view-catalogo');
+    carregarCatalogo();
+  } else if (destino === 'kits') {
+    document.getElementById('nav-kits').classList.add('active');
+    mostrarView('view-kits');
+    carregarKits();
+  }
+}
+
+// Sobrescreve recarregar() para considerar view ativa
+function recarregar() {
+  if (_viewAtual === 'catalogo') {
+    carregarCatalogo();
+  } else if (_viewAtual === 'kits') {
+    carregarKits();
+  } else if (document.getElementById('view-detalhe').classList.contains('active') && estado.lev_selecionado) {
+    carregarItens(estado.lev_selecionado.id_levantamento);
+  } else {
+    carregarLevantamentos();
+  }
+}
+
+// =============================================================================
+// VIEW 3 — CATÁLOGO DE MANÔMETROS
+// =============================================================================
+
+var _catalogoItens = []; // cache para edição
+
+async function carregarCatalogo() {
+  var tbody = document.getElementById('cat-tbody');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px"><div class="spinner" style="margin:0 auto 10px"></div>Carregando...</td></tr>';
+
+  try {
+    var res = await gasGet('getCatalogoByTipo', { tipo: 'manometros' });
+    _catalogoItens = res.itens || [];
+    document.getElementById('cat-meta').textContent = _catalogoItens.length + ' item(s)';
+    _renderTabelaMano(_catalogoItens);
+  } catch (err) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:#9B2C2C">' + esc(err.message) + '</td></tr>';
+  }
+}
+
+function _renderTabelaMano(lista) {
+  var tbody = document.getElementById('cat-tbody');
+  if (!lista.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--t3)">Nenhum manômetro cadastrado.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = '';
+  lista.forEach(function(item) {
+    var ativo = String(item.ativo).toLowerCase() === 'true';
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td class="mono">' + esc(item.id) + '</td>' +
+      '<td class="desc">' + esc(item.desc_curta || '—') + '</td>' +
+      '<td>' + esc(item.escala_padrao || '—') + '</td>' +
+      '<td>' + esc(item.caixa_mm ? item.caixa_mm + 'mm' : '—') + '</td>' +
+      '<td>' + (String(item.requer_calibracao) === 'true' ? 'Sim' : 'Não') + '</td>' +
+      '<td><span class="' + (ativo ? 'badge-ativo' : 'badge-inativo') + '">' + (ativo ? 'Ativo' : 'Inativo') + '</span></td>' +
+      '<td><div class="act-btns">' +
+        '<button class="btn btn-ghost btn-sm" onclick="editarManometro(\'' + esc(item.id) + '\')">Editar</button>' +
+        '<button class="btn btn-ghost btn-sm" onclick="toggleAtivo(\'manometros\',\'' + esc(item.id) + '\',' + ativo + ')">' +
+          (ativo ? 'Inativar' : 'Ativar') + '</button>' +
+      '</div></td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function novoManometro() {
+  document.getElementById('mano-id').value           = '';
+  document.getElementById('mano-form-id-lbl').textContent = 'Novo';
+  document.getElementById('mano-tipo').value         = 'Manômetro';
+  document.getElementById('mano-fluido').value       = 'Glicerinado';
+  document.getElementById('mano-caixa').value        = '';
+  document.getElementById('mano-rosca').value        = '';
+  document.getElementById('mano-tipo-rosca').value   = 'NPT';
+  document.getElementById('mano-entrada').value      = 'Reta';
+  document.getElementById('mano-escala').value       = '';
+  document.getElementById('mano-marca').value        = '';
+  document.getElementById('mano-modelo').value       = '';
+  document.getElementById('mano-calib').value        = 'false';
+  document.getElementById('mano-ativo').value        = 'true';
+  _atualizarPreviewMano();
+  document.getElementById('modal-mano-overlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function editarManometro(id) {
+  var item = null;
+  for (var i = 0; i < _catalogoItens.length; i++) {
+    if (_catalogoItens[i].id === id) { item = _catalogoItens[i]; break; }
+  }
+  if (!item) { showToast('Item não encontrado.', 'error'); return; }
+
+  document.getElementById('mano-id').value           = item.id;
+  document.getElementById('mano-form-id-lbl').textContent = item.id;
+  document.getElementById('mano-tipo').value         = item.tipo         || 'Manômetro';
+  document.getElementById('mano-fluido').value       = item.fluido       || 'Glicerinado';
+  document.getElementById('mano-caixa').value        = item.caixa_mm     || '';
+  document.getElementById('mano-rosca').value        = item.rosca        || '';
+  document.getElementById('mano-tipo-rosca').value   = item.tipo_rosca   || 'NPT';
+  document.getElementById('mano-entrada').value      = item.entrada      || 'Reta';
+  document.getElementById('mano-escala').value       = item.escala_padrao || '';
+  document.getElementById('mano-marca').value        = item.marca        || '';
+  document.getElementById('mano-modelo').value       = item.modelo       || '';
+  document.getElementById('mano-calib').value        = String(item.requer_calibracao) === 'true' ? 'true' : 'false';
+  document.getElementById('mano-ativo').value        = String(item.ativo).toLowerCase() === 'true' ? 'true' : 'false';
+  _atualizarPreviewMano();
+  document.getElementById('modal-mano-overlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function _atualizarPreviewMano() {
+  var tipo   = document.getElementById('mano-tipo').value;
+  var fluido = document.getElementById('mano-fluido').value;
+  var caixa  = document.getElementById('mano-caixa').value.trim();
+  var rosca  = document.getElementById('mano-rosca').value.trim();
+  var trosc  = document.getElementById('mano-tipo-rosca').value;
+  var entr   = document.getElementById('mano-entrada').value;
+  var escala = document.getElementById('mano-escala').value.trim();
+  var marca  = document.getElementById('mano-marca').value.trim();
+
+  var partes = [];
+  var p1 = [tipo, fluido, caixa ? caixa + 'mm' : ''].filter(Boolean).join(' ');
+  if (p1.trim()) partes.push(p1.trim());
+  var p2 = [rosca, trosc].filter(Boolean).join(' ');
+  if (p2.trim()) partes.push(p2.trim());
+  if (entr)   partes.push(entr);
+  if (escala) partes.push(escala);
+  if (marca)  partes.push(marca);
+
+  var prev  = document.getElementById('mano-preview');
+  var texto = partes.join(' · ');
+  prev.textContent = texto || 'Preencha os campos acima';
+  prev.className   = 'preview-box' + (texto ? '' : ' empty');
+}
+
+async function salvarManometro() {
+  var dados = {
+    id:                document.getElementById('mano-id').value.trim(),
+    tipo:              document.getElementById('mano-tipo').value,
+    fluido:            document.getElementById('mano-fluido').value,
+    caixa_mm:          document.getElementById('mano-caixa').value.trim(),
+    rosca:             document.getElementById('mano-rosca').value.trim(),
+    tipo_rosca:        document.getElementById('mano-tipo-rosca').value,
+    entrada:           document.getElementById('mano-entrada').value,
+    escala_padrao:     document.getElementById('mano-escala').value.trim(),
+    marca:             document.getElementById('mano-marca').value.trim(),
+    modelo:            document.getElementById('mano-modelo').value.trim(),
+    requer_calibracao: document.getElementById('mano-calib').value,
+    ativo:             document.getElementById('mano-ativo').value
+  };
+
+  if (!dados.tipo || !dados.escala_padrao) {
+    showToast('Tipo e escala são obrigatórios.', 'error'); return;
+  }
+
+  mostrarLoading('Salvando manômetro...');
+  document.getElementById('btn-salvar-mano').disabled = true;
+
+  try {
+    var res = await gasPost({ action: 'salvarItemCatalogo', tipo: 'manometros', dados_item: dados });
+    esconderLoading();
+    document.getElementById('btn-salvar-mano').disabled = false;
+    _fecharModalId('modal-mano-overlay');
+    showToast('Manômetro ' + res.modo + ' (' + res.id + ')!', 'success');
+    carregarCatalogo();
+  } catch (err) {
+    esconderLoading();
+    document.getElementById('btn-salvar-mano').disabled = false;
+    showToast('Erro: ' + err.message, 'error');
+  }
+}
+
+// =============================================================================
+// VIEW 4 — KITS DE INSTALAÇÃO
+// =============================================================================
+
+var _kitsItens = [];
+
+async function carregarKits() {
+  var tbody = document.getElementById('kits-tbody');
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px"><div class="spinner" style="margin:0 auto 10px"></div>Carregando...</td></tr>';
+
+  try {
+    var res = await gasGet('getCatalogoByTipo', { tipo: 'kits' });
+    _kitsItens = res.itens || [];
+    document.getElementById('kits-meta').textContent = _kitsItens.length + ' item(s)';
+    _renderTabelaKits(_kitsItens);
+  } catch (err) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:#9B2C2C">' + esc(err.message) + '</td></tr>';
+  }
+}
+
+function _renderTabelaKits(lista) {
+  var tbody = document.getElementById('kits-tbody');
+  if (!lista.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--t3)">Nenhum kit cadastrado.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = '';
+  lista.forEach(function(item) {
+    var ativo = String(item.ativo).toLowerCase() === 'true';
+    var comps = item.componentes;
+    if (typeof comps === 'string' && comps.trim()) {
+      try { comps = JSON.parse(comps); } catch(e) { comps = []; }
+    }
+    var nComps = Array.isArray(comps) ? comps.length : 0;
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td class="mono">' + esc(item.id) + '</td>' +
+      '<td class="desc">' + esc(item.nome || '—') + '</td>' +
+      '<td>' + esc(item.bitola || '—') + '</td>' +
+      '<td>' + esc(item.tipo_kit || '—') + '</td>' +
+      '<td>' + nComps + ' item' + (nComps !== 1 ? 's' : '') + '</td>' +
+      '<td>' + (String(item.inclui_formalizacao_rs) === 'true' ? 'Sim' : 'Não') + '</td>' +
+      '<td><span class="' + (ativo ? 'badge-ativo' : 'badge-inativo') + '">' + (ativo ? 'Ativo' : 'Inativo') + '</span></td>' +
+      '<td><div class="act-btns">' +
+        '<button class="btn btn-ghost btn-sm" onclick="editarKit(\'' + esc(item.id) + '\')">Editar</button>' +
+        '<button class="btn btn-ghost btn-sm" onclick="toggleAtivo(\'kits\',\'' + esc(item.id) + '\',' + ativo + ')">' +
+          (ativo ? 'Inativar' : 'Ativar') + '</button>' +
+      '</div></td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function novoKit() {
+  document.getElementById('kit-id').value            = '';
+  document.getElementById('kit-form-id-lbl').textContent = 'Novo';
+  document.getElementById('kit-nome').value          = '';
+  document.getElementById('kit-bitola').value        = '';
+  document.getElementById('kit-tipo').value          = 'simples';
+  document.getElementById('kit-formalizacao').value  = 'false';
+  document.getElementById('kit-ativo').value         = 'true';
+  document.getElementById('comp-list').innerHTML     = '';
+  _addComponenteRow('', '1');
+  document.getElementById('modal-kit-overlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function editarKit(id) {
+  var item = null;
+  for (var i = 0; i < _kitsItens.length; i++) {
+    if (_kitsItens[i].id === id) { item = _kitsItens[i]; break; }
+  }
+  if (!item) { showToast('Kit não encontrado.', 'error'); return; }
+
+  document.getElementById('kit-id').value            = item.id;
+  document.getElementById('kit-form-id-lbl').textContent = item.id;
+  document.getElementById('kit-nome').value          = item.nome          || '';
+  document.getElementById('kit-bitola').value        = item.bitola        || '';
+  document.getElementById('kit-tipo').value          = item.tipo_kit      || 'simples';
+  document.getElementById('kit-formalizacao').value  = String(item.inclui_formalizacao_rs) === 'true' ? 'true' : 'false';
+  document.getElementById('kit-ativo').value         = String(item.ativo).toLowerCase() === 'true' ? 'true' : 'false';
+
+  var compList = document.getElementById('comp-list');
+  compList.innerHTML = '';
+  var comps = item.componentes;
+  if (typeof comps === 'string' && comps.trim()) {
+    try { comps = JSON.parse(comps); } catch(e) { comps = []; }
+  }
+  if (Array.isArray(comps) && comps.length) {
+    comps.forEach(function(c) { _addComponenteRow(c.descricao || '', c.qtd || 1); });
+  } else {
+    _addComponenteRow('', '1');
+  }
+
+  document.getElementById('modal-kit-overlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function _addComponenteRow(desc, qtd) {
+  var list = document.getElementById('comp-list');
+  var row  = document.createElement('div');
+  row.className = 'comp-row';
+  row.innerHTML =
+    '<input type="text"   class="form-ctrl" placeholder="Descrição do componente" value="' + esc(desc) + '">' +
+    '<input type="number" class="form-ctrl" placeholder="Qtd" min="1" value="' + esc(qtd || 1) + '">' +
+    '<button class="btn-rm" onclick="_removerComponenteRow(this)" type="button" title="Remover">&#215;</button>';
+  list.appendChild(row);
+}
+
+function _removerComponenteRow(btn) {
+  var list = document.getElementById('comp-list');
+  if (list.children.length > 1) btn.parentElement.remove();
+  else showToast('O kit deve ter pelo menos 1 componente.', '');
+}
+
+async function salvarKit() {
+  var nome     = document.getElementById('kit-nome').value.trim();
+  var bitola   = document.getElementById('kit-bitola').value.trim();
+  var tipoKit  = document.getElementById('kit-tipo').value;
+  var formRS   = document.getElementById('kit-formalizacao').value;
+  var ativo    = document.getElementById('kit-ativo').value;
+
+  if (!nome || !bitola) {
+    showToast('Nome e bitola são obrigatórios.', 'error'); return;
+  }
+
+  var comps = [];
+  document.getElementById('comp-list').querySelectorAll('.comp-row').forEach(function(row) {
+    var inputs = row.querySelectorAll('input');
+    var d = inputs[0].value.trim();
+    var q = parseInt(inputs[1].value, 10) || 1;
+    if (d) comps.push({ descricao: d, qtd: q });
+  });
+
+  if (!comps.length) {
+    showToast('Adicione pelo menos 1 componente ao kit.', 'error'); return;
+  }
+
+  var dados = {
+    id:                    document.getElementById('kit-id').value.trim(),
+    nome:                  nome,
+    bitola:                bitola,
+    tipo_kit:              tipoKit,
+    componentes:           comps,
+    inclui_formalizacao_rs: formRS,
+    ativo:                 ativo
+  };
+
+  mostrarLoading('Salvando kit...');
+  document.getElementById('btn-salvar-kit').disabled = true;
+
+  try {
+    var res = await gasPost({ action: 'salvarItemCatalogo', tipo: 'kits', dados_item: dados });
+    esconderLoading();
+    document.getElementById('btn-salvar-kit').disabled = false;
+    _fecharModalId('modal-kit-overlay');
+    showToast('Kit ' + res.modo + ' (' + res.id + ')!', 'success');
+    carregarKits();
+  } catch (err) {
+    esconderLoading();
+    document.getElementById('btn-salvar-kit').disabled = false;
+    showToast('Erro: ' + err.message, 'error');
+  }
+}
+
+// =============================================================================
+// TOGGLE ATIVO (compartilhado)
+// =============================================================================
+
+async function toggleAtivo(tipo, id, ativoAtual) {
+  var acao = ativoAtual ? 'inativar' : 'ativar';
+  if (!confirm('Deseja ' + acao + ' o item ' + id + '?')) return;
+
+  mostrarLoading((ativoAtual ? 'Inativando' : 'Ativando') + '...');
+
+  try {
+    await gasPost({ action: 'toggleAtivoItem', tipo: tipo, id: id, ativo: String(!ativoAtual) });
+    esconderLoading();
+    showToast('Item ' + (ativoAtual ? 'inativado' : 'ativado') + '.', 'success');
+    if (tipo === 'manometros') carregarCatalogo();
+    else carregarKits();
+  } catch (err) {
+    esconderLoading();
+    showToast('Erro: ' + err.message, 'error');
+  }
+}
+
+// =============================================================================
+// HELPERS DE MODAL (genérico)
+// =============================================================================
+
+function _fecharSeOverlayId(evt, overlayId) {
+  if (evt.target === evt.currentTarget) _fecharModalId(overlayId);
+}
+
+function _fecharModalId(overlayId) {
+  document.getElementById(overlayId).classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+// =============================================================================
+// INICIALIZAÇÃO
+// =============================================================================
+
+window.addEventListener('load', function() {
+  if (GAS_URL === 'COLE_AQUI_A_URL_DO_GAS') {
+    document.getElementById('url-warning').style.display = 'block';
+    document.getElementById('lev-grid').innerHTML =
+      '<div style="grid-column:1/-1"><div class="empty">' +
+      '<div class="empty-icon">&#9881;</div>' +
+      '<div class="empty-title">Configure a URL do GAS</div>' +
+      '<div class="empty-sub">Edite a constante <code>GAS_URL</code> no início do &lt;script&gt; para conectar ao backend.</div>' +
+      '</div></div>';
+  } else {
+    carregarLevantamentos();
+  }
+});
+</script>
+</body>
+</html>
