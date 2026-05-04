@@ -239,6 +239,7 @@ function doPost(e) {
       case 'atualizarStatusItem':  resultado = atualizarStatusItem(body);  break;
       case 'salvarItemCatalogo':   resultado = salvarItemCatalogo(body);   break;
       case 'toggleAtivoItem':      resultado = toggleAtivoItem(body);      break;
+      case 'atualizarDadosAdministrativosItem': resultado = atualizarDadosAdministrativosItem(body); break;
       default:
         resultado = _erro('ACAO_INVALIDA', 'action não reconhecida: ' + action);
     }
@@ -734,6 +735,42 @@ function atualizarStatusItem(body) {
   }
 }
 
+
+
+/**
+ * Atualiza campos administrativos de um item e registra histórico simples.
+ * Body: { action, id_item, fornecedor, valor_cotado, prazo_entrega, status_aprovacao_cliente, responsavel, observacao }
+ */
+function atualizarDadosAdministrativosItem(body) {
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+    if (!body.id_item) return _erro('CAMPO_OBRIGATORIO', 'id_item é obrigatório.');
+
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var abaItens = ss.getSheetByName('ITENS');
+    var dados = abaItens.getDataRange().getValues();
+    var cab = dados[0];
+    var idx = { status: cab.indexOf('status'), fornecedor: cab.indexOf('fornecedor'), valor: cab.indexOf('valor_cotado'), prazo: cab.indexOf('prazo_entrega'), aprov: cab.indexOf('status_aprovacao_cliente'), ts: cab.indexOf('timestamp_ultima_atualizacao') };
+    var row = -1, statusAtual = '';
+    for (var i = 1; i < dados.length; i++) {
+      if (String(dados[i][0]) === String(body.id_item)) { row = i + 1; statusAtual = dados[i][idx.status]; break; }
+    }
+    if (row === -1) return _erro('ITEM_NAO_ENCONTRADO', 'Item não encontrado: ' + body.id_item);
+
+    if (body.fornecedor !== undefined && idx.fornecedor !== -1) abaItens.getRange(row, idx.fornecedor + 1).setValue(body.fornecedor);
+    if (body.valor_cotado !== undefined && idx.valor !== -1) abaItens.getRange(row, idx.valor + 1).setValue(body.valor_cotado);
+    if (body.prazo_entrega !== undefined && idx.prazo !== -1) abaItens.getRange(row, idx.prazo + 1).setValue(body.prazo_entrega);
+    if (body.status_aprovacao_cliente !== undefined && idx.aprov !== -1) abaItens.getRange(row, idx.aprov + 1).setValue(body.status_aprovacao_cliente);
+    var agora = new Date().toISOString();
+    if (idx.ts !== -1) abaItens.getRange(row, idx.ts + 1).setValue(agora);
+
+    var abaHist = ss.getSheetByName('HISTORICO_STATUS');
+    abaHist.appendRow([_gerarIdHistorico(ss), body.id_item, statusAtual, 'dados_administrativos_atualizados', body.responsavel || '', body.observacao || '', agora]);
+    SpreadsheetApp.flush();
+    return { status: 'ok', id_item: body.id_item, timestamp: agora };
+  } finally { lock.releaseLock(); }
+}
 
 // =============================================================================
 // FUNÇÕES AUXILIARES

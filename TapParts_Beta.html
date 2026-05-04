@@ -598,6 +598,10 @@
             <span class="modal-field-lbl">Origem</span>
             <span class="modal-field-val" id="m-origem">—</span>
           </div>
+          <div class="modal-field modal-full">
+            <span class="modal-field-lbl">Situação administrativa</span>
+            <span class="modal-field-val" id="m-situacao">—</span>
+          </div>
         </div>
       </div>
 
@@ -616,6 +620,14 @@
         </div>
       </div>
 
+
+      <div class="modal-section">
+        <div class="modal-section-ttl">Dados administrativos (edição)</div>
+        <div class="form-row"><label class="form-label" for="inp-aprov">Aprovação cliente</label><input type="text" class="form-ctrl" id="inp-aprov" placeholder="pendente/aprovado/reprovado"></div>
+        <div class="form-row"><label class="form-label" for="inp-fornecedor">Fornecedor</label><input type="text" class="form-ctrl" id="inp-fornecedor" placeholder="Fornecedor"></div>
+        <div class="form-row"><label class="form-label" for="inp-valor">Valor cotado</label><input type="text" class="form-ctrl" id="inp-valor" placeholder="0,00"></div>
+        <div class="form-row"><label class="form-label" for="inp-prazo">Prazo de entrega</label><input type="text" class="form-ctrl" id="inp-prazo" placeholder="Ex: 7 dias"></div>
+      </div>
       <!-- Atualizar status -->
       <div class="modal-section">
         <div class="modal-section-ttl">Atualizar Status</div>
@@ -645,9 +657,8 @@
 
     <div class="modal-foot">
       <button class="btn btn-ghost btn-sm" onclick="_fecharModal()">Fechar</button>
-      <button class="btn btn-primary btn-sm" id="btn-atualizar" onclick="atualizarStatus()">
-        Atualizar status
-      </button>
+      <button class="btn btn-ghost btn-sm" id="btn-salvar-admin" onclick="salvarDadosAdministrativos()">Salvar dados administrativos</button>
+      <button class="btn btn-primary btn-sm" id="btn-atualizar" onclick="atualizarStatus()">Atualizar status</button>
     </div>
 
   </div><!-- /.modal-card -->
@@ -941,6 +952,48 @@ function formatarData(v) {
   return s.length > 30 ? s.substring(0,25)+'…' : s;
 }
 
+function boolSimNao(v) {
+  if (v === true) return 'Sim';
+  var s = txt(v).trim().toLowerCase();
+  return (s === 'true' || s === 'sim' || s === '1') ? 'Sim' : 'Não';
+}
+function formatarMoedaBR(v) {
+  if (v == null || txt(v).trim() === '') return '—';
+  var num = Number(String(v).replace(/\./g,'').replace(',','.').replace(/[^0-9.-]/g,''));
+  if (!isFinite(num)) return ouVazio(v);
+  return num.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+}
+function formatarEscalaItem(item) {
+  var ei = txt(item && item.escala_inicio).trim();
+  var ef = txt(item && item.escala_fim).trim();
+  var eu = txt(item && item.escala_unidade).trim();
+  if (ei && ef && eu) return ei + '–' + ef + ' ' + eu;
+  return '—';
+}
+function parseComponentesKit(v) {
+  if (Array.isArray(v)) return v;
+  if (typeof v === 'string' && v.trim()) { try { return JSON.parse(v); } catch (e) { return v; } }
+  return '';
+}
+function resumirKitItem(item) {
+  var idKit = txt(item && item.id_kit).trim();
+  if (!idKit) return 'Sem kit';
+  var comps = parseComponentesKit(item.componentes_kit);
+  if (Array.isArray(comps) && comps.length) return idKit + ' · ' + comps.slice(0,2).map(function(c){ return txt(c.descricao || c).trim(); }).filter(Boolean).join(', ');
+  return idKit;
+}
+function calcularSituacaoAdministrativa(item) {
+  var status = txt(item && item.status).trim();
+  if (status === 'entregue') return 'Concluído';
+  if (status === 'em_calibracao') return 'Em calibração';
+  if (status === 'recebido' && boolSimNao(item && item.requer_calibracao) === 'Sim') return 'Aguardando calibração';
+  if (status === 'recebido') return 'Pronto para retorno';
+  if (status === 'comprado') return 'Aguardando recebimento';
+  if (status === 'aprovado') return 'Aguardando compra';
+  if (status === 'cotado') return 'Aguardando aprovação';
+  return 'Aguardando cotação';
+}
+
 // =============================================================================
 // VIEW 1 — LISTA DE LEVANTAMENTOS
 // =============================================================================
@@ -1095,8 +1148,13 @@ function _criarGrupoVaso(grupo) {
   var rowsHTML = '';
   grupo.itens.forEach(function(item) {
     var sub = [];
-    if (item.id_kit && txt(item.id_kit).trim()) sub.push('Kit: ' + esc(item.id_kit));
-    if (item.observacao && txt(item.observacao).trim()) sub.push(esc(item.observacao));
+    sub.push('Tag: ' + esc(ouVazio(item.tag_vaso)));
+    sub.push('Escala: ' + esc(formatarEscalaItem(item)));
+    sub.push('Kit: ' + esc(resumirKitItem(item)));
+    sub.push('Calibração: ' + esc(boolSimNao(item.requer_calibracao)));
+    sub.push('Lacre: ' + esc(boolSimNao(item.requer_lacre)));
+    sub.push('Aprovação: ' + esc(ouVazio(item.status_aprovacao_cliente)));
+    sub.push('Situação: ' + esc(calcularSituacaoAdministrativa(item)));
 
     rowsHTML +=
       '<div class="item-row">' +
@@ -1158,16 +1216,10 @@ function abrirModal(idItem) {
   document.getElementById('m-nome-vaso').textContent = ouVazio(item.nome_vaso);
   document.getElementById('m-qtd').textContent = ouVazio(item.quantidade);
 
-  // Escala
-  var escStr = '—';
-  var ei = txt(item.escala_inicio), ef = txt(item.escala_fim), eu = txt(item.escala_unidade);
-  if (ei.trim() !== '') escStr = ei + ' a ' + ef + (eu.trim() ? ' ' + eu : '');
-  document.getElementById('m-escala').textContent = escStr;
+  document.getElementById('m-escala').textContent = formatarEscalaItem(item);
 
-  document.getElementById('m-calibracao').textContent =
-    txt(item.requer_calibracao) === 'true' ? 'Sim (NR-13)' : 'Não';
-  document.getElementById('m-lacre').textContent =
-    txt(item.requer_lacre) === 'true' ? 'Sim' : 'Não';
+  document.getElementById('m-calibracao').textContent = boolSimNao(item.requer_calibracao) === 'Sim' ? 'Sim (NR-13)' : 'Não';
+  document.getElementById('m-lacre').textContent = boolSimNao(item.requer_lacre);
 
   // Observação
   var obsWrap = document.getElementById('m-obs-wrap');
@@ -1184,10 +1236,7 @@ function abrirModal(idItem) {
     kitSec.style.display = 'block';
     document.getElementById('m-kit-id').textContent = item.id_kit;
 
-    var comps = item.componentes_kit;
-    if (typeof comps === 'string' && comps.trim()) {
-      try { comps = JSON.parse(comps); } catch(e) { comps = null; }
-    }
+    var comps = parseComponentesKit(item.componentes_kit);
     var compsText = '—';
     if (Array.isArray(comps) && comps.length) {
       compsText = comps.map(function(c) {
@@ -1207,9 +1256,10 @@ function abrirModal(idItem) {
   // Fornecimento
   document.getElementById('m-aprov').textContent    = ouVazio(item.status_aprovacao_cliente);
   document.getElementById('m-fornecedor').textContent = ouVazio(item.fornecedor);
-  document.getElementById('m-valor').textContent    = ouVazio(item.valor_cotado);
+  document.getElementById('m-valor').textContent    = formatarMoedaBR(item.valor_cotado);
   document.getElementById('m-prazo').textContent    = ouVazio(item.prazo_entrega);
   document.getElementById('m-origem').textContent   = ouVazio(item.origem);
+  document.getElementById('m-situacao').textContent = calcularSituacaoAdministrativa(item);
 
   // Datas
   document.getElementById('m-ts-criacao').textContent = formatarData(item.timestamp_criacao);
@@ -1220,6 +1270,10 @@ function abrirModal(idItem) {
   for (var j = 0; j < sel.options.length; j++) {
     if (sel.options[j].value === item.status) { sel.selectedIndex = j; break; }
   }
+  document.getElementById('inp-aprov').value = txt(item.status_aprovacao_cliente || '');
+  document.getElementById('inp-fornecedor').value = txt(item.fornecedor || '');
+  document.getElementById('inp-valor').value = txt(item.valor_cotado || '');
+  document.getElementById('inp-prazo').value = txt(item.prazo_entrega || '');
   document.getElementById('inp-resp').value    = 'ADM';
   document.getElementById('inp-obs-upd').value = '';
 
@@ -1235,6 +1289,41 @@ function _fecharModal() {
   document.getElementById('modal-overlay').classList.remove('active');
   document.body.style.overflow = '';
   estado.item_atual = null;
+}
+
+// =============================================================================
+// DADOS ADMINISTRATIVOS
+// =============================================================================
+
+async function salvarDadosAdministrativos() {
+  var item = estado.item_atual;
+  if (!item) return;
+  var responsavel = document.getElementById('inp-resp').value.trim() || 'ADM';
+  var observacao  = document.getElementById('inp-obs-upd').value.trim();
+  var body = {
+    action: 'atualizarDadosAdministrativosItem',
+    id_item: item.id_item,
+    fornecedor: document.getElementById('inp-fornecedor').value.trim(),
+    valor_cotado: document.getElementById('inp-valor').value.trim(),
+    prazo_entrega: document.getElementById('inp-prazo').value.trim(),
+    status_aprovacao_cliente: document.getElementById('inp-aprov').value.trim(),
+    responsavel: responsavel,
+    observacao: observacao
+  };
+  document.getElementById('btn-salvar-admin').disabled = true;
+  mostrarLoading('Salvando dados administrativos...');
+  try {
+    await gasPost(body);
+    esconderLoading();
+    document.getElementById('btn-salvar-admin').disabled = false;
+    showToast('Dados administrativos salvos com sucesso.', 'success');
+    if (estado.lev_selecionado) await carregarItens(estado.lev_selecionado.id_levantamento);
+    abrirModal(item.id_item);
+  } catch (err) {
+    esconderLoading();
+    document.getElementById('btn-salvar-admin').disabled = false;
+    showToast('Erro ao salvar dados administrativos: ' + err.message, 'error');
+  }
 }
 
 // =============================================================================
