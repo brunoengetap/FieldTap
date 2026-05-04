@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>FieldTap</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #F0F4F8;
+      color: #1A202C;
+      min-height: 100dvh;
+    }
+
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Cada view fica oculta por padrão; .active a exibe */
+    .view { display: none; flex: 1; flex-direction: column; }
+    .view.active { display: flex; }
+
+    /* ── Header ── */
+    .header {
+      background: #1F4E79;
+      color: white;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header-title   { flex: 1; font-size: 18px; font-weight: 700; }
+    .header-sub     { font-size: 13px; opacity: .8; }
+    .btn-icon {
+      background: none; border: none; color: white;
+      font-size: 20px; cursor: pointer; padding: 4px; line-height: 1;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .badge {
+      background: #E53935; color: white;
+      border-radius: 12px; padding: 2px 8px;
+      font-size: 12px; font-weight: 700;
+    }
+
+    /* ── Scrollable content ── */
+    .content { flex: 1; padding: 16px; overflow-y: auto; }
+
+    /* ── Cards ── */
+    .card {
+      background: white; border-radius: 12px; padding: 16px;
+      margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      cursor: pointer; border: 2px solid transparent;
+      transition: border-color .15s, box-shadow .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .card:active        { border-color: #1F4E79; box-shadow: 0 2px 8px rgba(31,78,121,.2); }
+    .card.selected      { border-color: #1F4E79; background: #EBF2F9; }
+    .card-title         { font-size: 15px; font-weight: 700; color: #1F4E79; margin-bottom: 4px; }
+    .card-sub           { font-size: 13px; color: #718096; }
+    .card-meta          { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .chip {
+      background: #EBF2F9; color: #1F4E79;
+      border-radius: 20px; padding: 3px 10px;
+      font-size: 12px; font-weight: 600;
+    }
+    .chip-warn { background: #FFF8E1; color: #856404; }
+
+    /* ── PIN screen ── */
+    .pin-bg {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 32px 24px;
+      background: linear-gradient(150deg, #1F4E79 0%, #2E6DA4 100%);
+      min-height: 100dvh;
+    }
+    .pin-logo    { font-size: 38px; font-weight: 900; color: white; letter-spacing: -1px; }
+    .pin-tagline { font-size: 13px; color: rgba(255,255,255,.65); margin-bottom: 36px; }
+    .pin-card {
+      background: white; border-radius: 20px; padding: 28px 24px;
+      width: 100%; max-width: 340px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.18);
+    }
+    .pin-label  { font-size: 14px; font-weight: 600; color: #4A5568; text-align: center; margin-bottom: 16px; }
+    .pin-dots   { display: flex; justify-content: center; gap: 18px; margin-bottom: 6px; }
+    .pin-dot {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2px solid #CBD5E0; background: white;
+      transition: all .12s;
+    }
+    .pin-dot.filled { background: #1F4E79; border-color: #1F4E79; }
+    .pin-error { color: #E53935; font-size: 13px; text-align: center; min-height: 18px; margin-bottom: 4px; }
+    .pin-keypad {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px;
+    }
+    .pin-key {
+      background: #F7FAFC; border: 1px solid #E2E8F0; border-radius: 10px;
+      height: 54px; font-size: 20px; font-weight: 600; color: #2D3748;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent; transition: background .1s;
+    }
+    .pin-key:active { background: #E2E8F0; }
+    .pin-key.k0  { grid-column: 2; }
+    .pin-key.del { font-size: 15px; color: #E53935; }
+
+    /* ── URL config warning ── */
+    .url-warning {
+      background: #FFF3CD; border-left: 4px solid #F59E0B;
+      border-radius: 8px; padding: 10px 12px; margin-top: 16px;
+      font-size: 12px; color: #78350F; line-height: 1.5;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      border: none; border-radius: 10px; padding: 14px 20px;
+      font-size: 15px; font-weight: 700; cursor: pointer; width: 100%;
+      transition: opacity .15s, transform .1s; -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active    { transform: scale(.98); }
+    .btn:disabled  { opacity: .45; cursor: not-allowed; }
+    .btn-primary   { background: #1F4E79; color: white; }
+    .btn-primary:hover:not(:disabled) { background: #163d62; }
+    .btn-danger    { background: #E53935; color: white; }
+    .btn-ghost     { background: transparent; color: #1F4E79; border: 2px solid #1F4E79; }
+    .btn-sm        { padding: 8px 14px; font-size: 13px; width: auto; }
+
+    /* ── Footer actions ── */
+    .footer { padding: 16px; background: white; border-top: 1px solid #E2E8F0; }
+
+    /* ── Form fields ── */
+    .field         { margin-bottom: 16px; }
+    .field-label   { font-size: 13px; font-weight: 600; color: #4A5568; margin-bottom: 6px; }
+    .field-input {
+      width: 100%; padding: 12px; border: 2px solid #E2E8F0;
+      border-radius: 10px; font-size: 15px; color: #2D3748; background: white;
+    }
+    .field-input:focus { outline: none; border-color: #1F4E79; }
+    .qty-row       { display: flex; gap: 8px; align-items: center; }
+    .qty-input     { text-align: center; width: 80px; }
+
+    /* ── Info banner ── */
+    .banner {
+      background: #EBF2F9; border-left: 4px solid #1F4E79;
+      border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;
+    }
+    .banner-title { font-size: 15px; font-weight: 700; color: #1F4E79; }
+    .banner-sub   { font-size: 13px; color: #4A5568; margin-top: 2px; }
+
+    /* ── Review items ── */
+    .item-row {
+      background: white; border-radius: 10px; padding: 12px 14px;
+      margin-bottom: 10px; display: flex; gap: 10px; align-items: flex-start;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    .item-info  { flex: 1; }
+    .item-title { font-size: 14px; font-weight: 700; color: #1F4E79; }
+    .item-meta  { font-size: 12px; color: #718096; margin-top: 3px; line-height: 1.5; }
+
+    /* ── Section heading ── */
+    .section-h {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: #A0AEC0; margin-bottom: 10px; margin-top: 2px;
+    }
+
+    /* ── Empty / loading state ── */
+    .empty {
+      text-align: center; padding: 40px 24px; color: #A0AEC0;
+    }
+    .empty-icon { font-size: 44px; margin-bottom: 10px; }
+
+    /* ── Confirmation screen ── */
+    .confirm-wrap {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 32px 24px; text-align: center;
+    }
+    .confirm-icon    { font-size: 64px; margin-bottom: 14px; }
+    .confirm-title   { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+    .confirm-title.ok  { color: #276749; }
+    .confirm-title.err { color: #9B2C2C; }
+    .confirm-id {
+      font-size: 17px; font-weight: 700; color: #1F4E79;
+      background: #EBF2F9; border-radius: 8px; padding: 8px 20px;
+      margin: 10px 0; font-family: monospace; letter-spacing: .03em;
+    }
+    .confirm-items {
+      width: 100%; max-width: 360px; text-align: left;
+      background: white; border-radius: 12px; padding: 14px;
+      margin: 12px 0; box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      max-height: 220px; overflow-y: auto;
+    }
+    .confirm-item {
+      font-size: 12px; color: #4A5568; padding: 4px 0;
+      border-bottom: 1px solid #E2E8F0; font-family: monospace;
+    }
+    .confirm-item:last-child { border-bottom: none; }
+    .confirm-body { font-size: 14px; color: #4A5568; margin: 6px 0; line-height: 1.5; }
+    .confirm-actions {
+      display: flex; gap: 12px; margin-top: 20px;
+      width: 100%; max-width: 320px;
+    }
+
+    /* ── Loading overlay ── */
+    .loading-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.4); z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .loading-overlay.active { display: flex; }
+    .loading-box {
+      background: white; border-radius: 16px;
+      padding: 24px 32px; text-align: center;
+      font-size: 14px; font-weight: 600; color: #1F4E79;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 4px solid #E2E8F0; border-top-color: #1F4E79;
+      border-radius: 50%; animation: spin .7s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #2D3748; color: white; padding: 12px 20px;
+      border-radius: 10px; font-size: 14px; z-index: 200;
+      max-width: 90vw; text-align: center; display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,.2);
+    }
+    .toast.show    { display: block; }
+    .toast.success { background: #276749; }
+    .toast.error   { background: #9B2C2C; }
+
+    .muted { color: #A0AEC0; }
+    .mt16  { margin-top: 16px; }
+  </style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ═══════════════════════════════════════════════════
+       TELA 1 — PIN
+  ════════════════════════════════════════════════════ -->
+  <div class="view active" id="view-pin">
+    <div class="pin-bg">
+      <div class="pin-logo">FieldTap</div>
+      <div class="pin-tagline">Inspeção de campo · Engetap</div>
+
+      <div class="pin-card">
+        <div class="pin-label">Digite seu PIN de 4 dígitos</div>
+
+        <div class="pin-dots" id="pin-dots">
+          <div class="pin-dot" id="dot-0"></div>
+          <div class="pin-dot" id="dot-1"></div>
+          <div class="pin-dot" id="dot-2"></div>
+          <div class="pin-dot" id="dot-3"></div>
+        </div>
+        <div class="pin-error" id="pin-error"></div>
+
+        <div class="pin-keypad">
+          <button class="pin-key" onclick="pinDigit('1')">1</button>
+          <button class="pin-key" onclick="pinDigit('2')">2</button>
+          <button class="pin-key" onclick="pinDigit('3')">3</button>
+          <button class="pin-key" onclick="pinDigit('4')">4</button>
+          <button class="pin-key" onclick="pinDigit('5')">5</button>
+          <button class="pin-key" onclick="pinDigit('6')">6</button>
+          <button class="pin-key" onclick="pinDigit('7')">7</button>
+          <button class="pin-key" onclick="pinDigit('8')">8</button>
+          <button class="pin-key" onclick="pinDigit('9')">9</button>
+          <button class="pin-key k0"  onclick="pinDigit('0')">0</button>
+          <button class="pin-key del" onclick="pinDel()">&#9003;</button>
+        </div>
+
+        <div id="url-warning" class="url-warning" style="display:none">
+          <strong>&#9888; URL do GAS não configurada.</strong><br>
+          Abra o arquivo <strong>FieldTap_Beta.html</strong> em um editor de texto,
+          localize a linha:<br><br>
+          <code>const GAS_URL = 'COLE_AQUI_A_URL_DO_GAS';</code><br><br>
+          e substitua pelo endereço do Web App implantado no Google Apps Script.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       TELA 2 — LISTA DE OS
+  ════════════════════════════════════════════════════ -->
+  <div class="view" id="view-os">
+    <div class="header">
+      <div style="flex:1">
+        <div class="header-title">FieldTap</div>
+        <div class="header-sub" id="os-inspetor-sub">—</div>
+      </div>
+      <button class="btn-icon" onclick="logout()" title="Sair">&#8629;</button>
+    </div>
+    <div class="content">
+      <div class="section-h">Ordens de Serviço ativas</div>
+      <div id="os-list">
+        <div class="empty"><div class="spinner" style="margin:0 auto"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       TELA 3 — VASOS DA OS
+  ════════════════════════════════════════════════════ -->
+  <div class="view" id="view-vasos">
+    <div class="header">
+      <button class="btn-icon" onclick="voltarOS()">&#8592;</button>
+      <div style="flex:1">
+        <div class="header-title">Equipamentos</div>
+        <div class="header-sub" id="vasos-os-sub">—</div>
+      </div>
+      <button class="btn-icon" id="btn-cart" onclick="irRevisao()" style="display:none" title="Revisar itens">
+        &#128722; <span class="badge" id="badge">0</span>
+      </button>
+    </div>
+    <div class="content">
+      <div class="section-h">Selecione o equipamento a inspecionar</div>
+      <div id="vasos-list"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       TELA 4 — CONFIGURAR ITEM
+  ════════════════════════════════════════════════════ -->
+  <div class="view" id="view-item">
+    <div class="header">
+      <button class="btn-icon" onclick="voltarVasos()">&#8592;</button>
+      <div style="flex:1">
+        <div class="header-title">Adicionar Item</div>
+        <div class="header-sub" id="item-vaso-sub">—</div>
+      </div>
+    </div>
+    <div class="content">
+      <div class="banner">
+        <div class="banner-title" id="item-vaso-nome">—</div>
+        <div class="banner-sub"  id="item-vaso-info">—</div>
+      </div>
+
+      <!-- Catálogo de manômetros -->
+      <div class="field">
+        <div class="field-label">Manômetro / Vacuômetro</div>
+        <div id="mano-list"></div>
+      </div>
+
+      <!-- Kit de instalação (aparece conforme bitola do manômetro selecionado) -->
+      <div class="field" id="kit-field" style="display:none">
+        <div class="field-label">Kit de instalação <span class="muted">(opcional)</span></div>
+        <div id="kit-list"></div>
+      </div>
+
+      <!-- Quantidade -->
+      <div class="field">
+        <div class="field-label">Quantidade</div>
+        <div class="qty-row">
+          <button class="btn btn-ghost btn-sm" style="width:44px" onclick="ajustarQtd(-1)">&#8722;</button>
+          <input type="number" id="item-qtd" class="field-input qty-input" value="1" min="1" max="99">
+          <button class="btn btn-ghost btn-sm" style="width:44px" onclick="ajustarQtd(1)">+</button>
+        </div>
+      </div>
+
+      <!-- Observação -->
+      <div class="field">
+        <div class="field-label">Observação <span class="muted">(opcional)</span></div>
+        <input type="text" id="item-obs" class="field-input" placeholder="Ex: instalar no circuito de vapor">
+      </div>
+    </div>
+    <div class="footer">
+      <button class="btn btn-primary" onclick="adicionarItem()">Adicionar ao levantamento</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       TELA 5 — REVISÃO
+  ════════════════════════════════════════════════════ -->
+  <div class="view" id="view-revisao">
+    <div class="header">
+      <button class="btn-icon" onclick="voltarVasos()">&#8592;</button>
+      <div style="flex:1">
+        <div class="header-title">Revisão</div>
+        <div class="header-sub" id="revisao-sub">—</div>
+      </div>
+    </div>
+    <div class="content">
+      <div class="section-h">Itens selecionados</div>
+      <div id="revisao-lista"></div>
+    </div>
+    <div class="footer">
+      <button class="btn btn-primary" id="btn-enviar" onclick="enviarLevantamento()">
+        Enviar levantamento
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       TELA 6 — CONFIRMAÇÃO (sucesso ou erro)
+  ════════════════════════════════════════════════════ -->
+  <div class="view" id="view-confirmacao">
+    <div class="content" style="padding:0">
+
+      <!-- Sucesso -->
+      <div class="confirm-wrap" id="conf-ok" style="display:none">
+        <div class="confirm-icon">&#9989;</div>
+        <div class="confirm-title ok">Levantamento enviado!</div>
+        <div class="confirm-body">ID do levantamento:</div>
+        <div class="confirm-id" id="conf-lev-id">—</div>
+        <div class="confirm-body">Itens gerados na planilha:</div>
+        <div class="confirm-items" id="conf-items-list"></div>
+        <button class="btn btn-primary mt16" style="max-width:320px" onclick="novoLevantamento()">
+          Novo levantamento
+        </button>
+      </div>
+
+      <!-- Erro -->
+      <div class="confirm-wrap" id="conf-err" style="display:none">
+        <div class="confirm-icon">&#10060;</div>
+        <div class="confirm-title err">Falha no envio</div>
+        <div class="confirm-body" id="conf-err-msg">—</div>
+        <div class="confirm-body muted" style="font-size:13px">
+          Seus dados não foram perdidos. Você pode revisar e tentar novamente.
+        </div>
+        <div class="confirm-actions">
+          <button class="btn btn-ghost" onclick="voltarRevisao()">&#8592; Revisar</button>
+          <button class="btn btn-primary" onclick="enviarLevantamento()">Tentar novamente</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /.app -->
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <div id="loading-msg">Aguarde...</div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// =============================================================================
+// ENGETAP — FieldTap
+// FieldTap_Beta.html — Sprint S1: conexão com dados reais via GAS
+// =============================================================================
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CONFIGURAÇÃO — edite SOMENTE esta linha com a URL do Web App GAS implantado
+// ─────────────────────────────────────────────────────────────────────────────
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyn3nTtrMM4Y8tOK7qyIIzAYA7WhHK4yXKd4BmT3urPaizwaO4Lhmq8U3wMfOW-GUCGmw/exec';
+// ─────────────────────────────────────────────────────────────────────────────
+
+// =============================================================================
+// ESTADO DA APLICAÇÃO
+// =============================================================================
+
+var estado = {
+  inspetor:         null,   // { id_inspetor, nome }
+  catalogos:        null,   // { manometros:[], kits:[] }
+  os_selecionada:   null,   // objeto OS
+  vaso_selecionado: null,   // objeto vaso
+  mano_selecionado: null,   // objeto manômetro
+  kit_selecionado:  null,   // objeto kit ou null
+  itens:            []      // itens acumulados para o levantamento
+};
+
+// =============================================================================
+// COMUNICAÇÃO COM O GAS
+// =============================================================================
+
+async function gasGet(action, params) {
+  var url = new URL(GAS_URL);
+  url.searchParams.set('action', action);
+  if (params) {
+    Object.keys(params).forEach(function(k) { url.searchParams.set(k, params[k]); });
+  }
+  var res = await fetch(url.toString(), { redirect: 'follow' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  var text = await res.text();
+  var data;
+  try { data = JSON.parse(text); } catch(e) { throw new Error('Resposta inválida do servidor'); }
+  if (data.status === 'erro') throw new Error(data.mensagem || data.codigo);
+  return data;
+}
+
+// POST usa Content-Type: text/plain para evitar preflight CORS com GAS
+async function gasPost(body) {
+  var res = await fetch(GAS_URL, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'text/plain;charset=UTF-8' }
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  var text = await res.text();
+  var data;
+  try { data = JSON.parse(text); } catch(e) { throw new Error('Resposta inválida do servidor'); }
+  if (data.status === 'erro') throw new Error(data.mensagem || data.codigo);
+  return data;
+}
+
+// =============================================================================
+// UTILITÁRIOS DE INTERFACE
+// =============================================================================
+
+function mostrarView(id) {
+  document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function mostrarLoading(msg) {
+  document.getElementById('loading-msg').textContent = msg || 'Aguarde...';
+  document.getElementById('loading-overlay').classList.add('active');
+}
+function esconderLoading() {
+  document.getElementById('loading-overlay').classList.remove('active');
+}
+
+var _toastTimer;
+function showToast(msg, tipo) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (tipo ? ' ' + tipo : '');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function() { el.classList.remove('show'); }, 3200);
+}
+
+function esc(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatarData(v) {
+  if (!v) return '—';
+  var m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? m[3] + '/' + m[2] + '/' + m[1] : String(v);
+}
+
+function atualizarBadge() {
+  var n = estado.itens.length;
+  document.getElementById('badge').textContent = n;
+  document.getElementById('btn-cart').style.display = n > 0 ? 'block' : 'none';
+}
+
+// =============================================================================
+// TELA 1 — PIN
+// =============================================================================
+
+var _pin = '';
+
+window.addEventListener('load', function() {
+  if (GAS_URL === 'COLE_AQUI_A_URL_DO_GAS') {
+    document.getElementById('url-warning').style.display = 'block';
+  }
+});
+
+function pinDigit(d) {
+  if (_pin.length >= 4) return;
+  _pin += d;
+  _atualizarDots();
+  document.getElementById('pin-error').textContent = '';
+  if (_pin.length === 4) setTimeout(autenticar, 120);
+}
+
+function pinDel() {
+  _pin = _pin.slice(0, -1);
+  _atualizarDots();
+}
+
+function _atualizarDots() {
+  for (var i = 0; i < 4; i++) {
+    document.getElementById('dot-' + i).classList.toggle('filled', i < _pin.length);
+  }
+}
+
+async function autenticar() {
+  if (GAS_URL === 'COLE_AQUI_A_URL_DO_GAS') {
+    document.getElementById('pin-error').textContent =
+      'Configure a URL do GAS antes de usar (veja aviso abaixo).';
+    _pin = ''; _atualizarDots();
+    return;
+  }
+
+  mostrarLoading('Validando PIN...');
+  try {
+    var res = await gasGet('validarPIN', { pin: _pin });
+    esconderLoading();
+
+    if (res.valido) {
+      estado.inspetor = { id_inspetor: res.id_inspetor, nome: res.nome };
+      document.getElementById('os-inspetor-sub').textContent = 'Inspetor: ' + res.nome;
+      _pin = ''; _atualizarDots();
+      mostrarView('view-os');
+      carregarOS();
+      _carregarCatalogosBackground();
+    } else {
+      document.getElementById('pin-error').textContent = 'PIN incorreto. Tente novamente.';
+      _pin = ''; _atualizarDots();
+    }
+  } catch (err) {
+    esconderLoading();
+    document.getElementById('pin-error').textContent = 'Erro de conexão: ' + err.message;
+    _pin = ''; _atualizarDots();
+  }
+}
+
+function logout() {
+  estado = { inspetor:null, catalogos:null, os_selecionada:null,
+             vaso_selecionado:null, mano_selecionado:null,
+             kit_selecionado:null, itens:[] };
+  _pin = ''; _atualizarDots();
+  document.getElementById('pin-error').textContent = '';
+  mostrarView('view-pin');
+}
+
+// =============================================================================
+// TELA 2 — LISTA DE OS
+// =============================================================================
+
+async function carregarOS() {
+  var container = document.getElementById('os-list');
+  container.innerHTML = '<div class="empty"><div class="spinner" style="margin:0 auto"></div></div>';
+
+  try {
+    var res = await gasGet('getOS');
+    var lista = res.os || [];
+
+    if (!lista.length) {
+      container.innerHTML = '<div class="empty"><div class="empty-icon">&#128203;</div>Nenhuma OS ativa encontrada.</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    lista.forEach(function(os) {
+      var c = document.createElement('div');
+      c.className = 'card';
+      c.innerHTML =
+        '<div class="card-title">' + esc(os.id_os) + '</div>' +
+        '<div class="card-sub">' + esc(os.cliente) + '</div>' +
+        '<div class="card-meta">' +
+          '<span class="chip">Início: ' + formatarData(os.data_inicio) + '</span>' +
+          '<span class="chip">' + esc(os.total_vasos) + ' equipamento(s)</span>' +
+        '</div>';
+      c.addEventListener('click', function() { selecionarOS(os); });
+      container.appendChild(c);
+    });
+  } catch (err) {
+    container.innerHTML =
+      '<div class="empty"><div class="empty-icon">&#9888;</div>' +
+      'Erro ao carregar OS:<br><small>' + esc(err.message) + '</small></div>';
+  }
+}
+
+function selecionarOS(os) {
+  estado.os_selecionada = os;
+  estado.itens = [];    // novo levantamento por OS
+  atualizarBadge();
+  document.getElementById('vasos-os-sub').textContent = os.cliente;
+  mostrarView('view-vasos');
+  carregarVasos(os.id_os);
+}
+
+function voltarOS() {
+  mostrarView('view-os');
+}
+
+// =============================================================================
+// TELA 3 — VASOS
+// =============================================================================
+
+async function carregarVasos(idOS) {
+  var container = document.getElementById('vasos-list');
+  container.innerHTML = '<div class="empty"><div class="spinner" style="margin:0 auto"></div></div>';
+
+  try {
+    var res = await gasGet('getVasosByOS', { os: idOS });
+    var lista = res.vasos || [];
+
+    if (!lista.length) {
+      container.innerHTML = '<div class="empty"><div class="empty-icon">&#128269;</div>Nenhum equipamento encontrado.</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    lista.forEach(function(v) {
+      var c = document.createElement('div');
+      c.className = 'card';
+      c.innerHTML =
+        '<div class="card-title">' + esc(v.tag) + ' — ' + esc(v.nome) + '</div>' +
+        '<div class="card-sub">' + esc(v.setor) + '</div>' +
+        '<div class="card-meta">' +
+          '<span class="chip">Cat. ' + esc(v.categoria) + '</span>' +
+          (v.pmta ? '<span class="chip">PMTA ' + esc(v.pmta) + ' kgf/cm&sup2;</span>' : '') +
+        '</div>';
+      c.addEventListener('click', function() { irItem(v); });
+      container.appendChild(c);
+    });
+  } catch (err) {
+    container.innerHTML =
+      '<div class="empty"><div class="empty-icon">&#9888;</div>' +
+      'Erro ao carregar equipamentos:<br><small>' + esc(err.message) + '</small></div>';
+  }
+}
+
+function voltarVasos() {
+  mostrarView('view-vasos');
+}
+
+function irRevisao() {
+  if (!estado.itens.length) { showToast('Nenhum item no levantamento ainda.', 'error'); return; }
+  renderRevisao();
+  mostrarView('view-revisao');
+}
+
+// =============================================================================
+// TELA 4 — CONFIGURAR ITEM
+// =============================================================================
+
+async function _carregarCatalogosBackground() {
+  if (estado.catalogos) return;
+  try {
+    var res = await gasGet('getCatalogos');
+    estado.catalogos = {
+      manometros: res.manometros || [],
+      kits:       res.kits       || []
+    };
+  } catch (err) {
+    console.warn('Catálogos não carregados em background:', err.message);
+  }
+}
+
+function irItem(vaso) {
+  estado.vaso_selecionado = vaso;
+  estado.mano_selecionado = null;
+  estado.kit_selecionado  = null;
+
+  document.getElementById('item-vaso-sub').textContent  = vaso.tag + ' · ' + vaso.setor;
+  document.getElementById('item-vaso-nome').textContent = vaso.tag + ' — ' + vaso.nome;
+  document.getElementById('item-vaso-info').textContent =
+    'Setor: ' + vaso.setor + ' | Cat. ' + vaso.categoria +
+    (vaso.pmta ? ' | PMTA ' + vaso.pmta + ' kgf/cm²' : '');
+
+  document.getElementById('item-qtd').value = 1;
+  document.getElementById('item-obs').value = '';
+  document.getElementById('kit-field').style.display = 'none';
+
+  renderManometros();
+  mostrarView('view-item');
+}
+
+function renderManometros() {
+  var container = document.getElementById('mano-list');
+
+  if (!estado.catalogos || !estado.catalogos.manometros.length) {
+    container.innerHTML =
+      '<div class="empty" style="padding:20px">' +
+      '<div class="spinner" style="margin:0 auto"></div>' +
+      '<div style="margin-top:8px;font-size:13px">Carregando catálogo...</div></div>';
+
+    _carregarCatalogosBackground().then(function() {
+      if (estado.catalogos) renderManometros();
+    });
+    return;
+  }
+
+  container.innerHTML = '';
+  estado.catalogos.manometros.forEach(function(m) {
+    var c = document.createElement('div');
+    var isSelected = estado.mano_selecionado && estado.mano_selecionado.id === m.id;
+    c.className = 'card' + (isSelected ? ' selected' : '');
+    c.style.padding = '10px 14px';
+
+    var calChip = (String(m.requer_calibracao) === 'true')
+      ? '<span class="chip chip-warn">Cal. NR-13</span>' : '';
+
+    c.innerHTML =
+      '<div class="card-title" style="font-size:14px">' + esc(m.desc_curta || m.tipo) + '</div>' +
+      '<div class="card-meta" style="margin-top:6px">' +
+        '<span class="chip">' + esc(m.caixa_mm) + 'mm</span>' +
+        '<span class="chip">' + esc(m.rosca) + ' ' + esc(m.tipo_rosca) + '</span>' +
+        '<span class="chip">' + esc(m.escala_padrao) + '</span>' +
+        calChip +
+      '</div>';
+
+    (function(mano) {
+      c.addEventListener('click', function() { selecionarManometro(mano); });
+    })(m);
+
+    container.appendChild(c);
+  });
+}
+
+function selecionarManometro(m) {
+  estado.mano_selecionado = m;
+  estado.kit_selecionado  = null;
+
+  // Atualiza seleção visual nos cards de manômetro
+  var cards = document.querySelectorAll('#mano-list .card');
+  estado.catalogos.manometros.forEach(function(item, i) {
+    if (cards[i]) cards[i].classList.toggle('selected', item.id === m.id);
+  });
+
+  // Filtra kits pela bitola (campo rosca do manômetro)
+  var kitsDisp = (estado.catalogos.kits || []).filter(function(k) { return k.bitola === m.rosca; });
+  var kitField = document.getElementById('kit-field');
+  var kitList  = document.getElementById('kit-list');
+
+  if (kitsDisp.length) {
+    kitField.style.display = 'block';
+    kitList.innerHTML = '';
+
+    // Opção "sem kit" — selecionada por padrão
+    var semKit = document.createElement('div');
+    semKit.className = 'card selected';
+    semKit.style.padding = '10px 14px';
+    semKit.innerHTML = '<div class="card-title" style="font-size:13px;color:#718096">Sem kit de instalação</div>';
+    semKit.addEventListener('click', function() {
+      estado.kit_selecionado = null;
+      document.querySelectorAll('#kit-list .card').forEach(function(x) { x.classList.remove('selected'); });
+      semKit.classList.add('selected');
+    });
+    kitList.appendChild(semKit);
+
+    kitsDisp.forEach(function(kit) {
+      var c = document.createElement('div');
+      c.className = 'card';
+      c.style.padding = '10px 14px';
+
+      var comps = Array.isArray(kit.componentes)
+        ? kit.componentes.map(function(x) { return esc(x.descricao) + ' (x' + x.qtd + ')'; }).join(', ')
+        : '';
+      var inclRS = (String(kit.inclui_formalizacao_rs) === 'true')
+        ? '<div class="card-sub" style="font-size:11px;color:#856404;margin-top:3px">Inclui formalização RS</div>' : '';
+
+      c.innerHTML =
+        '<div class="card-title" style="font-size:13px">' + esc(kit.nome) + '</div>' +
+        (comps ? '<div class="card-sub" style="font-size:11px;margin-top:3px">' + comps + '</div>' : '') +
+        inclRS;
+
+      (function(kitObj) {
+        c.addEventListener('click', function() {
+          estado.kit_selecionado = kitObj;
+          document.querySelectorAll('#kit-list .card').forEach(function(x) { x.classList.remove('selected'); });
+          c.classList.add('selected');
+        });
+      })(kit);
+
+      kitList.appendChild(c);
+    });
+  } else {
+    kitField.style.display = 'none';
+  }
+}
+
+function ajustarQtd(delta) {
+  var inp = document.getElementById('item-qtd');
+  inp.value = Math.max(1, Math.min(99, (parseInt(inp.value) || 1) + delta));
+}
+
+function _parseEscala(str) {
+  var m = String(str || '').match(/^(-?\d+(?:\.\d+)?)-(-?\d+(?:\.\d+)?)\s*(.*)$/);
+  if (m) return { inicio: m[1], fim: m[2], unidade: m[3].trim() };
+  return { inicio: '', fim: '', unidade: str };
+}
+
+function adicionarItem() {
+  if (!estado.mano_selecionado) {
+    showToast('Selecione um manômetro antes de adicionar.', 'error');
+    return;
+  }
+
+  var qtd  = parseInt(document.getElementById('item-qtd').value) || 1;
+  var obs  = document.getElementById('item-obs').value.trim();
+  var m    = estado.mano_selecionado;
+  var kit  = estado.kit_selecionado;
+  var vaso = estado.vaso_selecionado;
+  var esc_ = _parseEscala(m.escala_padrao);
+
+  var item = {
+    id_vaso:           vaso.id_vaso,
+    tag_vaso:          vaso.tag,
+    nome_vaso:         vaso.nome,
+    tipo_acessorio:    'manometro',
+    id_item_catalogo:  m.id,
+    descricao_curta:   m.desc_curta || m.tipo,
+    quantidade:        qtd,
+    escala_inicio:     esc_.inicio,
+    escala_fim:        esc_.fim,
+    escala_unidade:    esc_.unidade,
+    id_kit:            kit ? kit.id : '',
+    componentes_kit:   kit ? (kit.componentes || []) : [],
+    ajuste_kit:        '',
+    requer_calibracao: String(m.requer_calibracao || false),
+    requer_lacre:      kit ? String(kit.inclui_formalizacao_rs || false) : 'false',
+    observacao:        obs,
+    tipo:              'catalogo',
+    // Metadados locais para exibição na revisão — removidos antes do envio ao GAS
+    _display: {
+      vaso: vaso.tag + ' — ' + vaso.nome,
+      mano: m.desc_curta || m.tipo,
+      kit:  kit ? kit.nome : null,
+      qtd:  qtd
+    }
+  };
+
+  estado.itens.push(item);
+  atualizarBadge();
+  showToast('Item adicionado!', 'success');
+  voltarVasos();
+}
+
+// =============================================================================
+// TELA 5 — REVISÃO
+// =============================================================================
+
+function renderRevisao() {
+  var n = estado.itens.length;
+  document.getElementById('revisao-sub').textContent =
+    (estado.os_selecionada ? estado.os_selecionada.cliente : '') +
+    ' · ' + n + ' item' + (n !== 1 ? 's' : '');
+
+  var container = document.getElementById('revisao-lista');
+  container.innerHTML = '';
+
+  if (!n) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">&#128722;</div>Nenhum item adicionado.</div>';
+    return;
+  }
+
+  estado.itens.forEach(function(item, idx) {
+    var d = item._display || {};
+    var row = document.createElement('div');
+    row.className = 'item-row';
+    row.innerHTML =
+      '<div class="item-info">' +
+        '<div class="item-title">' + esc(d.mano || item.descricao_curta) + '</div>' +
+        '<div class="item-meta">' +
+          esc(d.vaso || item.tag_vaso) + ' &nbsp;|&nbsp; Qtd: ' + item.quantidade +
+          (d.kit ? '<br>Kit: ' + esc(d.kit) : '') +
+          (item.observacao ? '<br>' + esc(item.observacao) : '') +
+        '</div>' +
+      '</div>' +
+      '<button class="btn btn-danger btn-sm" style="flex-shrink:0" onclick="removerItem(' + idx + ')">&#10005;</button>';
+    container.appendChild(row);
+  });
+}
+
+function removerItem(idx) {
+  estado.itens.splice(idx, 1);
+  atualizarBadge();
+  renderRevisao();
+}
+
+function voltarRevisao() {
+  mostrarView('view-revisao');
+}
+
+// =============================================================================
+// ENVIO — enviarLevantamento
+// =============================================================================
+
+async function enviarLevantamento() {
+  if (!estado.itens.length) {
+    showToast('Adicione pelo menos um item antes de enviar.', 'error');
+    return;
+  }
+
+  // Remove o campo _display (metadados locais) antes de enviar ao GAS
+  var itensLimpos = estado.itens.map(function(item) {
+    var limpo = Object.assign({}, item);
+    delete limpo._display;
+    return limpo;
+  });
+
+  var payload = {
+    action:      'enviarLevantamento',
+    id_inspetor: estado.inspetor.id_inspetor,
+    id_os:       estado.os_selecionada.id_os,
+    cliente:     estado.os_selecionada.cliente,
+    timestamp:   new Date().toISOString(),
+    itens:       itensLimpos
+  };
+
+  mostrarLoading('Enviando levantamento...');
+  document.getElementById('btn-enviar').disabled = true;
+
+  try {
+    var res = await gasPost(payload);
+    esconderLoading();
+    document.getElementById('btn-enviar').disabled = false;
+
+    // Exibe tela de sucesso
+    document.getElementById('conf-lev-id').textContent = res.id_levantamento;
+
+    var listEl = document.getElementById('conf-items-list');
+    listEl.innerHTML = '';
+    (res.itens_criados || []).forEach(function(ic) {
+      var d = document.createElement('div');
+      d.className = 'confirm-item';
+      d.textContent = ic.id_item + (ic.descricao_curta ? ' — ' + ic.descricao_curta : '');
+      listEl.appendChild(d);
+    });
+
+    document.getElementById('conf-ok').style.cssText  = 'display:flex; flex-direction:column';
+    document.getElementById('conf-err').style.display = 'none';
+    mostrarView('view-confirmacao');
+
+    // Limpa itens após envio bem-sucedido
+    estado.itens = [];
+    atualizarBadge();
+
+  } catch (err) {
+    esconderLoading();
+    document.getElementById('btn-enviar').disabled = false;
+
+    // Dados preservados — exibe tela de erro com opção de tentar novamente
+    document.getElementById('conf-err-msg').textContent = err.message || 'Erro desconhecido.';
+    document.getElementById('conf-ok').style.display  = 'none';
+    document.getElementById('conf-err').style.cssText = 'display:flex; flex-direction:column';
+    mostrarView('view-confirmacao');
+  }
+}
+
+// =============================================================================
+// TELA 6 — PÓS-CONFIRMAÇÃO
+// =============================================================================
+
+function novoLevantamento() {
+  estado.os_selecionada = null;
+  estado.itens = [];
+  atualizarBadge();
+  mostrarView('view-os');
+  carregarOS();
+}
+</script>
+</body>
+</html>
